@@ -1,0 +1,33 @@
+name: Deploy to staging
+
+permissions:
+  contents: read
+  packages: write
+
+on:
+  pull_request:
+    types: [ready_for_review, opened, reopened, synchronize]
+    branches:
+      - main
+
+jobs:
+  build-fdk-harvest-archive:
+    name: Build when pull request is created
+    if: github.event.pull_request.draft == false
+    uses: Informasjonsforvaltning/workflows/.github/workflows/build-push.yaml@main
+    with:
+      app_name: fdk-harvest-archive
+      java_version: '21'
+      coverage_file_path: ./target/site/jacoco/jacoco.xml
+      environment: staging
+      gh_environment: staging
+    secrets:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  dependabot-build:
+    name: Build image on PR from dependabot
+    if: ${{ github.actor == 'dependabot[bot]' && github.event_name == 'pull_request' }}
+    uses: Informasjonsforvaltning/workflows/.github/workflows/build.yaml@main
+    with:
+      java_version: '21'
