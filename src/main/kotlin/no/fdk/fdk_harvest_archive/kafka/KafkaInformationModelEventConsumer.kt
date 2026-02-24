@@ -10,6 +10,11 @@ import org.springframework.kafka.support.Acknowledgment
 import org.springframework.stereotype.Component
 import java.time.Duration
 
+/**
+ * Kafka listener for [InformationModelEvent] on topic `information-model-events`.
+ * Processes only [InformationModelEventType.INFORMATION_MODEL_HARVESTED] and [InformationModelEventType.INFORMATION_MODEL_REMOVED];
+ * other types are acknowledged and skipped. Delegates to the circuit breaker and nacks on failure.
+ */
 @Component
 class KafkaInformationModelEventConsumer(
     private val circuitBreaker: KafkaCircuitBreakerApi<InformationModelEvent>,
