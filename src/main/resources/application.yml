@@ -27,6 +27,10 @@ app:
   archive:
     dataset-dir: ${APP_ARCHIVE_DATASET_DIR:archive/datasets}
     concept-dir: ${APP_ARCHIVE_CONCEPT_DIR:archive/concepts}
+    data-service-dir: ${APP_ARCHIVE_DATASERVICE_DIR:archive/data_services}
+    information-model-dir: ${APP_ARCHIVE_INFORMATIONMODEL_DIR:archive/information_models}
+    event-dir: ${APP_ARCHIVE_EVENT_DIR:archive/events}
+    service-dir: ${APP_ARCHIVE_SERVICE_DIR:archive/services}
   kafka:
     topic:
       dataset-events: ${APP_KAFKA_TOPIC_DATASET_EVENTS:dataset-events}
@@ -48,6 +52,16 @@ resilience4j:
         permittedNumberOfCallsInHalfOpenState: 3
     instances:
       dataset-archive-cb:
+        baseConfig: default
+      concept-archive-cb:
+        baseConfig: default
+      dataservice-archive-cb:
+        baseConfig: default
+      informationmodel-archive-cb:
+        baseConfig: default
+      event-archive-cb:
+        baseConfig: default
+      service-archive-cb:
         baseConfig: default
 
 management:
@@ -78,3 +92,7 @@ app:
   archive:
     dataset-dir: dev-archive/datasets
     concept-dir: dev-archive/concepts
+    data-service-dir: dev-archive/data_services
+    information-model-dir: dev-archive/information_models
+    event-dir: dev-archive/events
+    service-dir: dev-archive/services
