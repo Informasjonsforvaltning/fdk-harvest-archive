@@ -55,4 +55,3 @@ class KafkaConceptEventCircuitBreakerTest {
         verify(exactly = 1) { eventArchiveService.saveConcept(event) }
     }
 }
-

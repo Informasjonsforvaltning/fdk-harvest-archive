@@ -71,8 +71,8 @@ class HarvestArchiveIT {
         val timestamp = System.currentTimeMillis()
         val event = DatasetEvent.newBuilder()
             .setType(DatasetEventType.DATASET_HARVESTED)
-            .setHarvestRunId("run-it")
-            .setUri("https://example.com/dataset/it")
+            .setHarvestRunId("run-dataset")
+            .setUri("https://example.com/dataset")
             .setFdkId(fdkId)
             .setGraph("<> a <http://www.w3.org/ns/dcat#Dataset> .")
             .setTimestamp(timestamp)
@@ -85,7 +85,10 @@ class HarvestArchiveIT {
         val found = awaitFile(expectedFile, timeoutSeconds = 30)
         Assertions.assertThat(found).isTrue()
         val content = expectedFile.toFile().readText()
-        Assertions.assertThat(content).contains(fdkId).contains("DATASET_HARVESTED").contains("run-it")
+        Assertions.assertThat(content)
+            .contains(fdkId)
+            .contains("DATASET_HARVESTED")
+            .contains("https://example.com/dataset")
     }
 
     @Test
@@ -95,8 +98,8 @@ class HarvestArchiveIT {
         val timestamp = System.currentTimeMillis()
         val event = ConceptEvent.newBuilder()
             .setType(ConceptEventType.CONCEPT_HARVESTED)
-            .setHarvestRunId("run-concept-it")
-            .setUri("https://example.com/concept/it")
+            .setHarvestRunId("run-concept")
+            .setUri("https://example.com/concept")
             .setFdkId(fdkId)
             .setGraph("<> a <http://www.w3.org/2004/02/skos/core#Concept> .")
             .setTimestamp(timestamp)
@@ -108,7 +111,10 @@ class HarvestArchiveIT {
         val expectedFile = conceptDir.resolve("${timestamp}_${fdkId}.json")
         Assertions.assertThat(awaitFile(expectedFile, 30)).isTrue()
         val content = expectedFile.toFile().readText()
-        Assertions.assertThat(content).contains(fdkId).contains("CONCEPT_HARVESTED").contains("run-concept-it")
+        Assertions.assertThat(content)
+            .contains(fdkId)
+            .contains("CONCEPT_HARVESTED")
+            .contains("https://example.com/concept")
     }
 
     @Test
@@ -118,8 +124,8 @@ class HarvestArchiveIT {
         val timestamp = System.currentTimeMillis()
         val event = DataServiceEvent.newBuilder()
             .setType(DataServiceEventType.DATA_SERVICE_HARVESTED)
-            .setHarvestRunId("run-dataservice-it")
-            .setUri("https://example.com/dataservice/it")
+            .setHarvestRunId("run-dataservice")
+            .setUri("https://example.com/dataservice")
             .setFdkId(fdkId)
             .setGraph("<> a <http://www.w3.org/ns/dcat#DataService> .")
             .setTimestamp(timestamp)
@@ -131,7 +137,10 @@ class HarvestArchiveIT {
         val expectedFile = dataserviceDir.resolve("${timestamp}_${fdkId}.json")
         Assertions.assertThat(awaitFile(expectedFile, 30)).isTrue()
         val content = expectedFile.toFile().readText()
-        Assertions.assertThat(content).contains(fdkId).contains("DATA_SERVICE_HARVESTED").contains("run-dataservice-it")
+        Assertions.assertThat(content)
+            .contains(fdkId)
+            .contains("DATA_SERVICE_HARVESTED")
+            .contains("https://example.com/dataservice")
     }
 
     @Test
@@ -141,8 +150,8 @@ class HarvestArchiveIT {
         val timestamp = System.currentTimeMillis()
         val event = InformationModelEvent.newBuilder()
             .setType(InformationModelEventType.INFORMATION_MODEL_HARVESTED)
-            .setHarvestRunId("run-informationmodel-it")
-            .setUri("https://example.com/informationmodel/it")
+            .setHarvestRunId("run-informationmodel")
+            .setUri("https://example.com/informationmodel")
             .setFdkId(fdkId)
             .setGraph("<> a <http://www.w3.org/ns/dcat#Dataset> .")
             .setTimestamp(timestamp)
@@ -154,7 +163,10 @@ class HarvestArchiveIT {
         val expectedFile = informationmodelDir.resolve("${timestamp}_${fdkId}.json")
         Assertions.assertThat(awaitFile(expectedFile, 30)).isTrue()
         val content = expectedFile.toFile().readText()
-        Assertions.assertThat(content).contains(fdkId).contains("INFORMATION_MODEL_HARVESTED").contains("run-informationmodel-it")
+        Assertions.assertThat(content)
+            .contains(fdkId)
+            .contains("INFORMATION_MODEL_HARVESTED")
+            .contains("https://example.com/informationmodel")
     }
 
     @Test
@@ -164,8 +176,8 @@ class HarvestArchiveIT {
         val timestamp = System.currentTimeMillis()
         val event = EventEvent.newBuilder()
             .setType(EventEventType.EVENT_HARVESTED)
-            .setHarvestRunId("run-event-it")
-            .setUri("https://example.com/event/it")
+            .setHarvestRunId("run-event")
+            .setUri("https://example.com/event")
             .setFdkId(fdkId)
             .setGraph("<> a <http://schema.org/Event> .")
             .setTimestamp(timestamp)
@@ -177,7 +189,10 @@ class HarvestArchiveIT {
         val expectedFile = eventDir.resolve("${timestamp}_${fdkId}.json")
         Assertions.assertThat(awaitFile(expectedFile, 30)).isTrue()
         val content = expectedFile.toFile().readText()
-        Assertions.assertThat(content).contains(fdkId).contains("EVENT_HARVESTED").contains("run-event-it")
+        Assertions.assertThat(content)
+            .contains(fdkId)
+            .contains("EVENT_HARVESTED")
+            .contains("https://example.com/event")
     }
 
     @Test
@@ -187,8 +202,8 @@ class HarvestArchiveIT {
         val timestamp = System.currentTimeMillis()
         val event = ServiceEvent.newBuilder()
             .setType(ServiceEventType.SERVICE_HARVESTED)
-            .setHarvestRunId("run-service-it")
-            .setUri("https://example.com/service/it")
+            .setHarvestRunId("run-service")
+            .setUri("https://example.com/service")
             .setFdkId(fdkId)
             .setGraph("<> a <http://www.w3.org/ns/dcat#DataService> .")
             .setTimestamp(timestamp)
@@ -200,7 +215,10 @@ class HarvestArchiveIT {
         val expectedFile = serviceDir.resolve("${timestamp}_${fdkId}.json")
         Assertions.assertThat(awaitFile(expectedFile, 30)).isTrue()
         val content = expectedFile.toFile().readText()
-        Assertions.assertThat(content).contains(fdkId).contains("SERVICE_HARVESTED").contains("run-service-it")
+        Assertions.assertThat(content)
+            .contains(fdkId)
+            .contains("SERVICE_HARVESTED")
+            .contains("https://example.com/service")
     }
 
     private fun produceAvroEvent(topic: String, key: String, event: Any) {
