@@ -5,9 +5,17 @@ import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry
 import io.github.resilience4j.circuitbreaker.event.CircuitBreakerOnStateTransitionEvent
 import no.fdk.fdk_harvest_archive.kafka.KafkaConceptEventCircuitBreaker
 import no.fdk.fdk_harvest_archive.kafka.KafkaConceptEventConsumer
+import no.fdk.fdk_harvest_archive.kafka.KafkaDataServiceEventCircuitBreaker
+import no.fdk.fdk_harvest_archive.kafka.KafkaDataServiceEventConsumer
 import no.fdk.fdk_harvest_archive.kafka.KafkaDatasetEventCircuitBreaker
 import no.fdk.fdk_harvest_archive.kafka.KafkaDatasetEventConsumer
+import no.fdk.fdk_harvest_archive.kafka.KafkaEventEventCircuitBreaker
+import no.fdk.fdk_harvest_archive.kafka.KafkaEventEventConsumer
+import no.fdk.fdk_harvest_archive.kafka.KafkaInformationModelEventCircuitBreaker
+import no.fdk.fdk_harvest_archive.kafka.KafkaInformationModelEventConsumer
 import no.fdk.fdk_harvest_archive.kafka.KafkaManager
+import no.fdk.fdk_harvest_archive.kafka.KafkaServiceEventCircuitBreaker
+import no.fdk.fdk_harvest_archive.kafka.KafkaServiceEventConsumer
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Configuration
@@ -33,6 +41,30 @@ open class CircuitBreakerConsumerConfiguration(
             .eventPublisher
             .onStateTransition { event: CircuitBreakerOnStateTransitionEvent ->
                 handleStateTransition(event, KafkaConceptEventConsumer.LISTENER_ID)
+            }
+
+        circuitBreakerRegistry.circuitBreaker(KafkaDataServiceEventCircuitBreaker.CIRCUIT_BREAKER_ID)
+            .eventPublisher
+            .onStateTransition { event: CircuitBreakerOnStateTransitionEvent ->
+                handleStateTransition(event, KafkaDataServiceEventConsumer.LISTENER_ID)
+            }
+
+        circuitBreakerRegistry.circuitBreaker(KafkaInformationModelEventCircuitBreaker.CIRCUIT_BREAKER_ID)
+            .eventPublisher
+            .onStateTransition { event: CircuitBreakerOnStateTransitionEvent ->
+                handleStateTransition(event, KafkaInformationModelEventConsumer.LISTENER_ID)
+            }
+
+        circuitBreakerRegistry.circuitBreaker(KafkaEventEventCircuitBreaker.CIRCUIT_BREAKER_ID)
+            .eventPublisher
+            .onStateTransition { event: CircuitBreakerOnStateTransitionEvent ->
+                handleStateTransition(event, KafkaEventEventConsumer.LISTENER_ID)
+            }
+
+        circuitBreakerRegistry.circuitBreaker(KafkaServiceEventCircuitBreaker.CIRCUIT_BREAKER_ID)
+            .eventPublisher
+            .onStateTransition { event: CircuitBreakerOnStateTransitionEvent ->
+                handleStateTransition(event, KafkaServiceEventConsumer.LISTENER_ID)
             }
     }
 
