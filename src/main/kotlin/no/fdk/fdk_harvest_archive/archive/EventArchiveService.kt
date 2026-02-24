@@ -14,6 +14,10 @@ import org.springframework.stereotype.Service
 import java.nio.file.Files
 import java.nio.file.Paths
 
+/**
+ * Persists harvest events as JSON files under type-specific directories.
+ * Each event is written as `{timestamp}_{fdkId}.json` with type, harvestRunId, uri, fdkId, graph, and timestamp.
+ */
 @Service
 class EventArchiveService(
     @param:Value($$"${app.archive.dataset-dir}") private val datasetDir: String,

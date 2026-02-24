@@ -10,6 +10,11 @@ import org.springframework.kafka.support.Acknowledgment
 import org.springframework.stereotype.Component
 import java.time.Duration
 
+/**
+ * Kafka listener for [ConceptEvent] on topic `concept-events`.
+ * Processes only [no.fdk.concept.ConceptEventType.CONCEPT_HARVESTED] and [no.fdk.concept.ConceptEventType.CONCEPT_REMOVED];
+ * other types are acknowledged and skipped. Delegates to the circuit breaker and nacks on failure.
+ */
 @Component
 class KafkaConceptEventConsumer(
     private val circuitBreaker: KafkaCircuitBreakerApi<ConceptEvent>,

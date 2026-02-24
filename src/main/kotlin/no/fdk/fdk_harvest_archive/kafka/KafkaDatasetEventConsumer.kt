@@ -10,6 +10,11 @@ import org.springframework.kafka.support.Acknowledgment
 import org.springframework.stereotype.Component
 import java.time.Duration
 
+/**
+ * Kafka listener for [DatasetEvent] on topic `dataset-events`.
+ * Processes only [no.fdk.dataset.DatasetEventType.DATASET_HARVESTED] and [no.fdk.dataset.DatasetEventType.DATASET_REMOVED];
+ * other types are acknowledged and skipped. Delegates to the circuit breaker and nacks on failure.
+ */
 @Component
 class KafkaDatasetEventConsumer(
     private val circuitBreaker: KafkaCircuitBreakerApi<DatasetEvent>,

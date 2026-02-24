@@ -10,6 +10,11 @@ import org.springframework.kafka.support.Acknowledgment
 import org.springframework.stereotype.Component
 import java.time.Duration
 
+/**
+ * Kafka listener for [ServiceEvent] on topic `service-events`.
+ * Processes only [ServiceEventType.SERVICE_HARVESTED] and [ServiceEventType.SERVICE_REMOVED];
+ * other types are acknowledged and skipped. Delegates to the circuit breaker and nacks on failure.
+ */
 @Component
 class KafkaServiceEventConsumer(
     private val circuitBreaker: KafkaCircuitBreakerApi<ServiceEvent>,

@@ -13,6 +13,10 @@ import org.springframework.kafka.core.DefaultKafkaConsumerFactory
 import org.springframework.kafka.annotation.EnableKafka
 import org.springframework.kafka.listener.ContainerProperties
 
+/**
+ * Kafka consumer configuration: bootstrap servers, Schema Registry, and a shared listener
+ * container factory for Avro (SpecificRecord) values with manual acknowledgment.
+ */
 @Configuration
 @EnableKafka
 open class KafkaConfig(

@@ -10,6 +10,11 @@ import org.springframework.kafka.support.Acknowledgment
 import org.springframework.stereotype.Component
 import java.time.Duration
 
+/**
+ * Kafka listener for [DataServiceEvent] on topic `data-service-events`.
+ * Processes only [DataServiceEventType.DATA_SERVICE_HARVESTED] and [DataServiceEventType.DATA_SERVICE_REMOVED];
+ * other types are acknowledged and skipped. Delegates to the circuit breaker and nacks on failure.
+ */
 @Component
 class KafkaDataServiceEventConsumer(
     private val circuitBreaker: KafkaCircuitBreakerApi<DataServiceEvent>,

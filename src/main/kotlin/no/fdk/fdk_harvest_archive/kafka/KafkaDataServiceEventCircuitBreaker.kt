@@ -8,6 +8,10 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
+/**
+ * Circuit-breaker-wrapped processor for [DataServiceEvent] records.
+ * Saves each event via [EventArchiveService.saveDataService]; failures open the circuit and trigger listener pause.
+ */
 @Component
 open class KafkaDataServiceEventCircuitBreaker(
     private val eventArchiveService: EventArchiveService,
