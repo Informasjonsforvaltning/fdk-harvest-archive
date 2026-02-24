@@ -31,14 +31,6 @@ app:
     information-model-dir: ${APP_ARCHIVE_INFORMATIONMODEL_DIR:archive/information_models}
     event-dir: ${APP_ARCHIVE_EVENT_DIR:archive/events}
     service-dir: ${APP_ARCHIVE_SERVICE_DIR:archive/services}
-  kafka:
-    topic:
-      dataset-events: ${APP_KAFKA_TOPIC_DATASET_EVENTS:dataset-events}
-      concept-events: ${APP_KAFKA_TOPIC_CONCEPT_EVENTS:concept-events}
-      data-service-events: ${APP_KAFKA_TOPIC_DATASERVICE_EVENTS:data-service-events}
-      information-model-events: ${APP_KAFKA_TOPIC_INFORMATIONMODEL_EVENTS:information-model-events}
-      service-events: ${APP_KAFKA_TOPIC_SERVICE_EVENTS:service-events}
-      event-events: ${APP_KAFKA_TOPIC_EVENT_EVENTS:event-events}
 
 resilience4j:
   circuitbreaker:

@@ -108,4 +108,3 @@ class KafkaConceptEventConsumerTest {
         verify(exactly = 0) { ack.acknowledge() }
     }
 }
-
