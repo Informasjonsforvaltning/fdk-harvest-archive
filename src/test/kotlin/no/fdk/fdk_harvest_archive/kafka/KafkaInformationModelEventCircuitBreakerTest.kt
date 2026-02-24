@@ -27,7 +27,7 @@ class KafkaInformationModelEventCircuitBreakerTest {
             .setGraph("<> a <http://example.org/InformationModel> .")
             .setTimestamp(1700000000000L)
             .build()
-        val record = ConsumerRecord<String, InformationModelEvent>("informationmodel-events", 0, 42L, "informationmodel-123", event)
+        val record = ConsumerRecord<String, InformationModelEvent>("information-model-events", 0, 42L, "informationmodel-123", event)
 
         every { eventArchiveService.saveInformationModel(any()) } returns Unit
 
@@ -44,7 +44,7 @@ class KafkaInformationModelEventCircuitBreakerTest {
             .setGraph("")
             .setTimestamp(1L)
             .build()
-        val record = ConsumerRecord<String, InformationModelEvent>("informationmodel-events", 1, 0L, "fail-id", event)
+        val record = ConsumerRecord<String, InformationModelEvent>("information-model-events", 1, 0L, "fail-id", event)
 
         every { eventArchiveService.saveInformationModel(any()) } throws RuntimeException("write failed")
 

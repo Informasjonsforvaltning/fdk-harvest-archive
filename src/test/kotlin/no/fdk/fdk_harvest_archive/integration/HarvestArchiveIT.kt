@@ -113,7 +113,7 @@ class HarvestArchiveIT {
 
     @Test
     fun `consumes DataServiceEvent from Kafka and saves as JSON file`() {
-        val topic = "dataservice-events"
+        val topic = "data-service-events"
         val fdkId = "integration-test-dataservice-789"
         val timestamp = System.currentTimeMillis()
         val event = DataServiceEvent.newBuilder()
@@ -136,7 +136,7 @@ class HarvestArchiveIT {
 
     @Test
     fun `consumes InformationModelEvent from Kafka and saves as JSON file`() {
-        val topic = "informationmodel-events"
+        val topic = "information-model-events"
         val fdkId = "integration-test-informationmodel-101"
         val timestamp = System.currentTimeMillis()
         val event = InformationModelEvent.newBuilder()
