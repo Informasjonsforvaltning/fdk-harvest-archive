@@ -391,7 +391,7 @@
                     <!--suppress UnresolvedMavenProperty -->
                     <argLine>${surefire.jacoco.args}</argLine>
                     <groups>unit</groups>
-                    <excludedGroups>contract</excludedGroups>
+                    <excludedGroups>integration</excludedGroups>
                     <includes>
                         <include>**/*Test.java</include>
                         <include>**/*Test.kt</include>
@@ -405,7 +405,7 @@
                 <configuration>
                     <!--suppress UnresolvedMavenProperty -->
                     <argLine>${failsafe.jacoco.args}</argLine>
-                    <groups>contract</groups>
+                    <groups>integration</groups>
                     <excludedGroups>unit</excludedGroups>
                     <includes>
                         <include>**/*IT.java</include>
