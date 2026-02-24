@@ -26,6 +26,7 @@ spring:
 app:
   archive:
     dataset-dir: ${APP_ARCHIVE_DATASET_DIR:archive/datasets}
+    concept-dir: ${APP_ARCHIVE_CONCEPT_DIR:archive/concepts}
   kafka:
     topic:
       dataset-events: ${APP_KAFKA_TOPIC_DATASET_EVENTS:dataset-events}
@@ -76,3 +77,4 @@ spring:
 app:
   archive:
     dataset-dir: dev-archive/datasets
+    concept-dir: dev-archive/concepts
