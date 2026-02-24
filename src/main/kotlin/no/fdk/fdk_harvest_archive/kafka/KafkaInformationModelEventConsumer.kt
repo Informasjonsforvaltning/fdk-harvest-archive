@@ -17,7 +17,7 @@ class KafkaInformationModelEventConsumer(
     private fun logger(): Logger = LOGGER
 
     @KafkaListener(
-        topics = ["informationmodel-events"],
+        topics = ["information-model-events"],
         groupId = "fdk-harvest-archive",
         containerFactory = "kafkaListenerContainerFactory",
         id = LISTENER_ID,

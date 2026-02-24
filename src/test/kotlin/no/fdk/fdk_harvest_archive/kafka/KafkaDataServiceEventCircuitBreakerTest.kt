@@ -27,7 +27,7 @@ class KafkaDataServiceEventCircuitBreakerTest {
             .setGraph("<> a <http://example.org/DataService> .")
             .setTimestamp(1700000000000L)
             .build()
-        val record = ConsumerRecord<String, DataServiceEvent>("dataservice-events", 0, 42L, "dataservice-123", event)
+        val record = ConsumerRecord<String, DataServiceEvent>("data-service-events", 0, 42L, "dataservice-123", event)
 
         every { eventArchiveService.saveDataService(any()) } returns Unit
 
@@ -44,7 +44,7 @@ class KafkaDataServiceEventCircuitBreakerTest {
             .setGraph("")
             .setTimestamp(1L)
             .build()
-        val record = ConsumerRecord<String, DataServiceEvent>("dataservice-events", 1, 0L, "fail-id", event)
+        val record = ConsumerRecord<String, DataServiceEvent>("data-service-events", 1, 0L, "fail-id", event)
 
         every { eventArchiveService.saveDataService(any()) } throws RuntimeException("write failed")
 

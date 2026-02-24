@@ -36,7 +36,7 @@ class KafkaInformationModelEventConsumerTest {
             .setGraph("<http://example.org/informationmodel/123> a <http://www.w3.org/ns/dcat#Dataset> .")
             .setTimestamp(123)
             .build()
-        val record = ConsumerRecord("informationmodel-events", 0, 0L, "key", event)
+        val record = ConsumerRecord("information-model-events", 0, 0L, "key", event)
 
         consumer.consumeInformationModelEvent(record, ack)
 
@@ -55,7 +55,7 @@ class KafkaInformationModelEventConsumerTest {
             .setGraph("<http://example.org/informationmodel/123> a <http://www.w3.org/ns/dcat#Dataset> .")
             .setTimestamp(123)
             .build()
-        val record = ConsumerRecord("informationmodel-events", 0, 0L, "key", event)
+        val record = ConsumerRecord("information-model-events", 0, 0L, "key", event)
 
         every { circuitBreaker.process(any()) } returns Unit
 
@@ -76,7 +76,7 @@ class KafkaInformationModelEventConsumerTest {
             .setGraph("")
             .setTimestamp(123)
             .build()
-        val record = ConsumerRecord("informationmodel-events", 0, 0L, "key", event)
+        val record = ConsumerRecord("information-model-events", 0, 0L, "key", event)
 
         every { circuitBreaker.process(any()) } returns Unit
 
@@ -97,7 +97,7 @@ class KafkaInformationModelEventConsumerTest {
             .setGraph("<http://example.org/informationmodel/123> a <http://www.w3.org/ns/dcat#Dataset> .")
             .setTimestamp(123)
             .build()
-        val record = ConsumerRecord("informationmodel-events", 0, 0L, "key", event)
+        val record = ConsumerRecord("information-model-events", 0, 0L, "key", event)
 
         every { circuitBreaker.process(any()) } throws RuntimeException("boom")
 

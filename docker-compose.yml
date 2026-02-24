@@ -58,7 +58,7 @@ services:
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
-        for topic in dataset-events concept-events dataservice-events informationmodel-events service-events event-events; do
+        for topic in dataset-events concept-events data-service-events information-model-events service-events event-events; do
           echo "Creating topic: $$topic"
           kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic "$$topic" --replication-factor 1 --partitions 1
         done

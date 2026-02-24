@@ -35,8 +35,8 @@ app:
     topic:
       dataset-events: ${APP_KAFKA_TOPIC_DATASET_EVENTS:dataset-events}
       concept-events: ${APP_KAFKA_TOPIC_CONCEPT_EVENTS:concept-events}
-      dataservice-events: ${APP_KAFKA_TOPIC_DATASERVICE_EVENTS:dataservice-events}
-      informationmodel-events: ${APP_KAFKA_TOPIC_INFORMATIONMODEL_EVENTS:informationmodel-events}
+      data-service-events: ${APP_KAFKA_TOPIC_DATASERVICE_EVENTS:data-service-events}
+      information-model-events: ${APP_KAFKA_TOPIC_INFORMATIONMODEL_EVENTS:information-model-events}
       service-events: ${APP_KAFKA_TOPIC_SERVICE_EVENTS:service-events}
       event-events: ${APP_KAFKA_TOPIC_EVENT_EVENTS:event-events}
 

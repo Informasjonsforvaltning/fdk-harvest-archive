@@ -36,7 +36,7 @@ class KafkaDataServiceEventConsumerTest {
             .setGraph("<http://example.org/dataservice/123> a <http://www.w3.org/ns/dcat#DataService> .")
             .setTimestamp(123)
             .build()
-        val record = ConsumerRecord("dataservice-events", 0, 0L, "key", event)
+        val record = ConsumerRecord("data-service-events", 0, 0L, "key", event)
 
         consumer.consumeDataServiceEvent(record, ack)
 
@@ -55,7 +55,7 @@ class KafkaDataServiceEventConsumerTest {
             .setGraph("<http://example.org/dataservice/123> a <http://www.w3.org/ns/dcat#DataService> .")
             .setTimestamp(123)
             .build()
-        val record = ConsumerRecord("dataservice-events", 0, 0L, "key", event)
+        val record = ConsumerRecord("data-service-events", 0, 0L, "key", event)
 
         every { circuitBreaker.process(any()) } returns Unit
 
@@ -76,7 +76,7 @@ class KafkaDataServiceEventConsumerTest {
             .setGraph("")
             .setTimestamp(123)
             .build()
-        val record = ConsumerRecord("dataservice-events", 0, 0L, "key", event)
+        val record = ConsumerRecord("data-service-events", 0, 0L, "key", event)
 
         every { circuitBreaker.process(any()) } returns Unit
 
@@ -97,7 +97,7 @@ class KafkaDataServiceEventConsumerTest {
             .setGraph("<http://example.org/dataservice/123> a <http://www.w3.org/ns/dcat#DataService> .")
             .setTimestamp(123)
             .build()
-        val record = ConsumerRecord("dataservice-events", 0, 0L, "key", event)
+        val record = ConsumerRecord("data-service-events", 0, 0L, "key", event)
 
         every { circuitBreaker.process(any()) } throws RuntimeException("boom")
 

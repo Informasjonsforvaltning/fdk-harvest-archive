@@ -17,7 +17,7 @@ class KafkaDataServiceEventConsumer(
     private fun logger(): Logger = LOGGER
 
     @KafkaListener(
-        topics = ["dataservice-events"],
+        topics = ["data-service-events"],
         groupId = "fdk-harvest-archive",
         containerFactory = "kafkaListenerContainerFactory",
         id = LISTENER_ID,

@@ -2,7 +2,7 @@
 set -e
 BOOTSTRAP="${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}"
 
-TOPICS="dataset-events concept-events dataservice-events informationmodel-events service-events event-events"
+TOPICS="dataset-events concept-events data-service-events information-model-events service-events event-events"
 
 for topic in $TOPICS; do
   echo "Creating topic: $topic"
