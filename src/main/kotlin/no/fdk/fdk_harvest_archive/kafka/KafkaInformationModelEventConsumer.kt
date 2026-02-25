@@ -2,6 +2,8 @@ package no.fdk.fdk_harvest_archive.kafka
 
 import no.fdk.informationmodel.InformationModelEvent
 import no.fdk.informationmodel.InformationModelEventType
+import org.apache.avro.generic.GenericRecord
+import org.apache.avro.specific.SpecificRecord
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -18,6 +20,7 @@ import java.time.Duration
 @Component
 class KafkaInformationModelEventConsumer(
     private val circuitBreaker: KafkaCircuitBreakerApi<InformationModelEvent>,
+    private val genericCircuitBreaker: KafkaGenericCircuitBreaker,
 ) {
     private fun logger(): Logger = LOGGER
 
@@ -28,21 +31,19 @@ class KafkaInformationModelEventConsumer(
         id = LISTENER_ID,
     )
     fun consumeInformationModelEvent(
-        record: ConsumerRecord<String, InformationModelEvent>,
+        record: ConsumerRecord<String, Any>,
         ack: Acknowledgment,
     ) {
         logger().debug("Received information model event - offset: {}, partition: {}", record.offset(), record.partition())
 
         val event = record.value()
 
-        if (event.type != InformationModelEventType.INFORMATION_MODEL_HARVESTED && event.type != InformationModelEventType.INFORMATION_MODEL_REMOVED) {
-            LOGGER.debug("Skipping information model event with type {}.", event.type)
-            ack.acknowledge()
-            return
-        }
-
         try {
-            circuitBreaker.process(record)
+            if (event is SpecificRecord) {
+                circuitBreaker.process(event as InformationModelEvent)
+            } else {
+                genericCircuitBreaker.process(event as GenericRecord, TOPIC)
+            }
             ack.acknowledge()
         } catch (e: Exception) {
             ack.nack(Duration.ZERO)
@@ -52,5 +53,6 @@ class KafkaInformationModelEventConsumer(
     companion object {
         private val LOGGER: Logger = LoggerFactory.getLogger(KafkaInformationModelEventConsumer::class.java)
         const val LISTENER_ID = "informationmodel-archive"
+        private const val TOPIC = "information-model-events"
     }
 }

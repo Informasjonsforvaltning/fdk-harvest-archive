@@ -245,4 +245,108 @@ class EventArchiveServiceTest {
         val content = expectedFile.toFile().readText()
         assertThat(content).contains("SERVICE_HARVESTED").contains("service-1")
     }
+
+    @Test
+    fun `saveGenericForTopic writes JSON file when topic and type are allowed`(@TempDir tempDir: Path) {
+        val datasetDir = tempDir.resolve("datasets").toString()
+        val service = EventArchiveService(
+            datasetDir = datasetDir,
+            conceptDir = tempDir.resolve("concepts").toString(),
+            dataServiceDir = tempDir.resolve("data_services").toString(),
+            informationModelDir = tempDir.resolve("information_models").toString(),
+            eventDir = tempDir.resolve("events").toString(),
+            serviceDir = tempDir.resolve("services").toString(),
+        )
+        val payload = mapOf<String, Any?>(
+            "type" to "DATASET_HARVESTED",
+            "harvestRunId" to "run-generic",
+            "uri" to "https://example.com/dataset/generic",
+            "fdkId" to "generic-dataset-1",
+            "graph" to "<> a <http://example.org/Dataset> .",
+            "timestamp" to "1700000000000",
+        )
+
+        service.saveGenericForTopic("dataset-events", payload)
+
+        val expectedFile = Path.of(datasetDir).resolve("1700000000000_generic-dataset-1.json")
+        assertThat(expectedFile).exists().isRegularFile
+        val content = expectedFile.toFile().readText()
+        assertThat(content)
+            .contains("generic-dataset-1")
+            .contains("DATASET_HARVESTED")
+            .contains("run-generic")
+    }
+
+    @Test
+    fun `saveGenericForTopic writes to correct directory per topic`(@TempDir tempDir: Path) {
+        val conceptDir = tempDir.resolve("concepts").toString()
+        val service = EventArchiveService(
+            datasetDir = tempDir.resolve("datasets").toString(),
+            conceptDir = conceptDir,
+            dataServiceDir = tempDir.resolve("data_services").toString(),
+            informationModelDir = tempDir.resolve("information_models").toString(),
+            eventDir = tempDir.resolve("events").toString(),
+            serviceDir = tempDir.resolve("services").toString(),
+        )
+        val payload = mapOf<String, Any?>(
+            "type" to "CONCEPT_REMOVED",
+            "harvestRunId" to null,
+            "uri" to null,
+            "fdkId" to "concept-generic-1",
+            "graph" to "",
+            "timestamp" to "99",
+        )
+
+        service.saveGenericForTopic("concept-events", payload)
+
+        val expectedFile = Path.of(conceptDir).resolve("99_concept-generic-1.json")
+        assertThat(expectedFile).exists().isRegularFile
+        assertThat(expectedFile.toFile().readText()).contains("CONCEPT_REMOVED").contains("concept-generic-1")
+    }
+
+    @Test
+    fun `saveGenericForTopic does not write when event type is not allowed for topic`(@TempDir tempDir: Path) {
+        val datasetDir = tempDir.resolve("datasets").toString()
+        val service = EventArchiveService(
+            datasetDir = datasetDir,
+            conceptDir = tempDir.resolve("concepts").toString(),
+            dataServiceDir = tempDir.resolve("data_services").toString(),
+            informationModelDir = tempDir.resolve("information_models").toString(),
+            eventDir = tempDir.resolve("events").toString(),
+            serviceDir = tempDir.resolve("services").toString(),
+        )
+        val payload = mapOf<String, Any?>(
+            "type" to "DATASET_REASONED",
+            "fdkId" to "skip-me",
+            "timestamp" to "1",
+        )
+
+        service.saveGenericForTopic("dataset-events", payload)
+
+        val expectedFile = Path.of(datasetDir).resolve("1_skip-me.json")
+        assertThat(expectedFile).doesNotExist()
+    }
+
+    @Test
+    fun `saveGenericForTopic does not write when topic is unknown`(@TempDir tempDir: Path) {
+        val datasetDir = tempDir.resolve("datasets").toString()
+        val service = EventArchiveService(
+            datasetDir = datasetDir,
+            conceptDir = tempDir.resolve("concepts").toString(),
+            dataServiceDir = tempDir.resolve("data_services").toString(),
+            informationModelDir = tempDir.resolve("information_models").toString(),
+            eventDir = tempDir.resolve("events").toString(),
+            serviceDir = tempDir.resolve("services").toString(),
+        )
+        val payload = mapOf<String, Any?>(
+            "type" to "DATASET_HARVESTED",
+            "fdkId" to "no-topic",
+            "timestamp" to "1",
+        )
+
+        service.saveGenericForTopic("unknown-topic", payload)
+
+        val wouldBeFile = Path.of(datasetDir).resolve("1_no-topic.json")
+        assertThat(wouldBeFile).doesNotExist()
+    }
 }

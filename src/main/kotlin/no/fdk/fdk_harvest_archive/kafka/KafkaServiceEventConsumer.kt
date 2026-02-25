@@ -2,6 +2,8 @@ package no.fdk.fdk_harvest_archive.kafka
 
 import no.fdk.service.ServiceEvent
 import no.fdk.service.ServiceEventType
+import org.apache.avro.generic.GenericRecord
+import org.apache.avro.specific.SpecificRecord
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -18,6 +20,7 @@ import java.time.Duration
 @Component
 class KafkaServiceEventConsumer(
     private val circuitBreaker: KafkaCircuitBreakerApi<ServiceEvent>,
+    private val genericCircuitBreaker: KafkaGenericCircuitBreaker,
 ) {
     private fun logger(): Logger = LOGGER
 
@@ -28,21 +31,19 @@ class KafkaServiceEventConsumer(
         id = LISTENER_ID,
     )
     fun consumeServiceEvent(
-        record: ConsumerRecord<String, ServiceEvent>,
+        record: ConsumerRecord<String, Any>,
         ack: Acknowledgment,
     ) {
         logger().debug("Received service event - offset: {}, partition: {}", record.offset(), record.partition())
 
         val event = record.value()
 
-        if (event.type != ServiceEventType.SERVICE_HARVESTED && event.type != ServiceEventType.SERVICE_REMOVED) {
-            LOGGER.debug("Skipping service event with type {}.", event.type)
-            ack.acknowledge()
-            return
-        }
-
         try {
-            circuitBreaker.process(record)
+            if (event is SpecificRecord) {
+                circuitBreaker.process(event as ServiceEvent)
+            } else {
+                genericCircuitBreaker.process(event as GenericRecord, TOPIC)
+            }
             ack.acknowledge()
         } catch (e: Exception) {
             ack.nack(Duration.ZERO)
@@ -52,5 +53,6 @@ class KafkaServiceEventConsumer(
     companion object {
         private val LOGGER: Logger = LoggerFactory.getLogger(KafkaServiceEventConsumer::class.java)
         const val LISTENER_ID = "service-archive"
+        private const val TOPIC = "service-events"
     }
 }

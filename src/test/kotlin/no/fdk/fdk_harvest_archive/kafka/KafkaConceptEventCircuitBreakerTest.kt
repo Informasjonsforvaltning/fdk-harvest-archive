@@ -6,7 +6,6 @@ import io.mockk.verify
 import no.fdk.concept.ConceptEvent
 import no.fdk.concept.ConceptEventType
 import no.fdk.fdk_harvest_archive.archive.EventArchiveService
-import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
@@ -18,7 +17,7 @@ class KafkaConceptEventCircuitBreakerTest {
     private val circuitBreaker = KafkaConceptEventCircuitBreaker(eventArchiveService)
 
     @Test
-    fun `process calls eventArchiveService saveConcept with record value`() {
+    fun `process calls eventArchiveService saveConcept with event`() {
         val event = ConceptEvent.newBuilder()
             .setType(ConceptEventType.CONCEPT_HARVESTED)
             .setHarvestRunId("run-1")
@@ -27,13 +26,27 @@ class KafkaConceptEventCircuitBreakerTest {
             .setGraph("<> a <http://example.org/Concept> .")
             .setTimestamp(1700000000000L)
             .build()
-        val record = ConsumerRecord("concept-events", 0, 42L, "concept-123", event)
-
         every { eventArchiveService.saveConcept(any()) } returns Unit
 
-        circuitBreaker.process(record)
+        circuitBreaker.process(event)
 
         verify(exactly = 1) { eventArchiveService.saveConcept(event) }
+    }
+
+    @Test
+    fun `reasoned events are skipped`() {
+        val event = ConceptEvent.newBuilder()
+            .setType(ConceptEventType.CONCEPT_REASONED)
+            .setHarvestRunId("12")
+            .setUri("https://concept.test")
+            .setFdkId("test-concept-123")
+            .setGraph("<http://example.org/concept/123>")
+            .setTimestamp(123)
+            .build()
+
+        circuitBreaker.process(event)
+
+        verify(exactly = 0) { eventArchiveService.saveConcept(any()) }
     }
 
     @Test
@@ -44,12 +57,10 @@ class KafkaConceptEventCircuitBreakerTest {
             .setGraph("")
             .setTimestamp(1L)
             .build()
-        val record = ConsumerRecord("concept-events", 1, 0L, "fail-id", event)
-
         every { eventArchiveService.saveConcept(any()) } throws RuntimeException("write failed")
 
         assertThrows(RuntimeException::class.java) {
-            circuitBreaker.process(record)
+            circuitBreaker.process(event)
         }
 
         verify(exactly = 1) { eventArchiveService.saveConcept(event) }

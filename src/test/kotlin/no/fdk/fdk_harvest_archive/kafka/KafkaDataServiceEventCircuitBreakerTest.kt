@@ -6,7 +6,6 @@ import io.mockk.verify
 import no.fdk.dataservice.DataServiceEvent
 import no.fdk.dataservice.DataServiceEventType
 import no.fdk.fdk_harvest_archive.archive.EventArchiveService
-import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
@@ -18,7 +17,7 @@ class KafkaDataServiceEventCircuitBreakerTest {
     private val circuitBreaker = KafkaDataServiceEventCircuitBreaker(eventArchiveService)
 
     @Test
-    fun `process calls eventArchiveService saveDataService with record value`() {
+    fun `process calls eventArchiveService saveDataService with event`() {
         val event = DataServiceEvent.newBuilder()
             .setType(DataServiceEventType.DATA_SERVICE_HARVESTED)
             .setHarvestRunId("run-1")
@@ -27,13 +26,27 @@ class KafkaDataServiceEventCircuitBreakerTest {
             .setGraph("<> a <http://example.org/DataService> .")
             .setTimestamp(1700000000000L)
             .build()
-        val record = ConsumerRecord<String, DataServiceEvent>("data-service-events", 0, 42L, "dataservice-123", event)
-
         every { eventArchiveService.saveDataService(any()) } returns Unit
 
-        circuitBreaker.process(record)
+        circuitBreaker.process(event)
 
         verify(exactly = 1) { eventArchiveService.saveDataService(event) }
+    }
+
+    @Test
+    fun `reasoned events are skipped`() {
+        val event = DataServiceEvent.newBuilder()
+            .setType(DataServiceEventType.DATA_SERVICE_REASONED)
+            .setHarvestRunId("12")
+            .setUri("https://dataservice.test")
+            .setFdkId("test-dataservice-123")
+            .setGraph("<http://example.org/dataservice/123>")
+            .setTimestamp(123)
+            .build()
+
+        circuitBreaker.process(event)
+
+        verify(exactly = 0) { eventArchiveService.saveDataService(any()) }
     }
 
     @Test
@@ -44,12 +57,10 @@ class KafkaDataServiceEventCircuitBreakerTest {
             .setGraph("")
             .setTimestamp(1L)
             .build()
-        val record = ConsumerRecord<String, DataServiceEvent>("data-service-events", 1, 0L, "fail-id", event)
-
         every { eventArchiveService.saveDataService(any()) } throws RuntimeException("write failed")
 
         assertThrows(RuntimeException::class.java) {
-            circuitBreaker.process(record)
+            circuitBreaker.process(event)
         }
 
         verify(exactly = 1) { eventArchiveService.saveDataService(event) }

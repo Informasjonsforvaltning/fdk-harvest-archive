@@ -3,7 +3,7 @@ package no.fdk.fdk_harvest_archive.kafka
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker
 import no.fdk.fdk_harvest_archive.archive.EventArchiveService
 import no.fdk.informationmodel.InformationModelEvent
-import org.apache.kafka.clients.consumer.ConsumerRecord
+import no.fdk.informationmodel.InformationModelEventType
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -18,10 +18,12 @@ open class KafkaInformationModelEventCircuitBreaker(
 ) : KafkaCircuitBreakerApi<InformationModelEvent> {
 
     @CircuitBreaker(name = CIRCUIT_BREAKER_ID)
-    override fun process(record: ConsumerRecord<String, InformationModelEvent>) {
-        val event = record.value()
+    override fun process(event: InformationModelEvent) {
+        if (event.type != InformationModelEventType.INFORMATION_MODEL_HARVESTED && event.type != InformationModelEventType.INFORMATION_MODEL_REMOVED) {
+            LOGGER.debug("Skipping information model event with type {}.", event.type)
+            return
+        }
 
-        LOGGER.debug("Processing information model event - offset: {}, partition: {}", record.offset(), record.partition())
         try {
             eventArchiveService.saveInformationModel(event)
         } catch (e: Exception) {

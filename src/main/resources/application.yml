@@ -15,11 +15,21 @@ spring:
     proxy-target-class: false
   kafka:
     bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    properties:
+      specific.avro.reader: false
+      auto.register.schemas: false
+      use.latest.version: true
+      value.subject.name.strategy: io.confluent.kafka.serializers.subject.RecordNameStrategy
+      key.subject.name.strategy: io.confluent.kafka.serializers.subject.RecordNameStrategy
     consumer:
       group-id: ${SPRING_KAFKA_CONSUMER_GROUP_ID:fdk-harvest-archive}
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      value-deserializer: io.confluent.kafka.serializers.KafkaAvroDeserializer
       properties:
         schema.registry.url: ${SPRING_KAFKA_CONSUMER_PROPERTIES_SCHEMA_REGISTRY_URL:http://localhost:8081}
     listener:
+      ack-mode: manual_immediate
       # false = app starts even when Kafka is down (listener can be started later when Kafka is available)
       auto-startup: ${SPRING_KAFKA_LISTENER_AUTO_STARTUP:false}
 

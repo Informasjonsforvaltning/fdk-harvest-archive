@@ -2,11 +2,17 @@ package no.fdk.fdk_harvest_archive.archive
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import no.fdk.concept.ConceptEvent
+import no.fdk.concept.ConceptEventType
 import no.fdk.dataset.DatasetEvent
+import no.fdk.dataset.DatasetEventType
 import no.fdk.dataservice.DataServiceEvent
+import no.fdk.dataservice.DataServiceEventType
 import no.fdk.event.EventEvent
+import no.fdk.event.EventEventType
 import no.fdk.informationmodel.InformationModelEvent
+import no.fdk.informationmodel.InformationModelEventType
 import no.fdk.service.ServiceEvent
+import no.fdk.service.ServiceEventType
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -29,8 +35,42 @@ class EventArchiveService(
 ) {
     private val objectMapper = jacksonObjectMapper()
 
+    private val topicToDir: Map<String, String> = mapOf(
+        "dataset-events" to datasetDir,
+        "concept-events" to conceptDir,
+        "data-service-events" to dataServiceDir,
+        "information-model-events" to informationModelDir,
+        "event-events" to eventDir,
+        "service-events" to serviceDir,
+    )
+
+    private val topicToAllowedTypes: Map<String, Set<String>> = mapOf(
+        "dataset-events" to setOf(DatasetEventType.DATASET_HARVESTED.name, DatasetEventType.DATASET_REMOVED.name),
+        "concept-events" to setOf(ConceptEventType.CONCEPT_HARVESTED.name, ConceptEventType.CONCEPT_REMOVED.name),
+        "data-service-events" to setOf(DataServiceEventType.DATA_SERVICE_HARVESTED.name, DataServiceEventType.DATA_SERVICE_REMOVED.name),
+        "information-model-events" to setOf(InformationModelEventType.INFORMATION_MODEL_HARVESTED.name, InformationModelEventType.INFORMATION_MODEL_REMOVED.name),
+        "event-events" to setOf(EventEventType.EVENT_HARVESTED.name, EventEventType.EVENT_REMOVED.name),
+        "service-events" to setOf(ServiceEventType.SERVICE_HARVESTED.name, ServiceEventType.SERVICE_REMOVED.name),
+    )
+
+    /**
+     * Saves a generic (map) payload to the directory for the given topic, only if the event type is HARVESTED or REMOVED for that topic.
+     */
+    fun saveGenericForTopic(topic: String, payload: Map<String, Any?>) {
+        val dir = topicToDir[topic] ?: return
+        val allowedTypes = topicToAllowedTypes[topic] ?: return
+        val type = payload["type"]?.toString() ?: return
+        if (type !in allowedTypes) {
+            LOGGER.debug("Skipping generic event with type {} for topic {}", type, topic)
+            return
+        }
+        val filename = "${payload["timestamp"]}_${payload["fdkId"]}.json"
+        saveAsFile(dir, filename, payload)
+        LOGGER.debug("Generic event saved to {}", filename)
+    }
+
     fun saveDataset(event: DatasetEvent) {
-        val path = "${event.timestamp}_${event.fdkId}.json"
+        val filename = "${event.timestamp}_${event.fdkId}.json"
         val payload = mapOf(
             "type" to event.type.name,
             "harvestRunId" to event.harvestRunId?.toString(),
@@ -39,12 +79,12 @@ class EventArchiveService(
             "graph" to event.graph.toString(),
             "timestamp" to event.timestamp,
         )
-        saveAsFile(datasetDir, path, payload)
-        LOGGER.debug("Dataset event saved to {}", path)
+        saveAsFile(datasetDir, filename, payload)
+        LOGGER.debug("Dataset event saved to {}", filename)
     }
 
     fun saveConcept(event: ConceptEvent) {
-        val path = "${event.timestamp}_${event.fdkId}.json"
+        val filename = "${event.timestamp}_${event.fdkId}.json"
         val payload = mapOf(
             "type" to event.type.name,
             "harvestRunId" to event.harvestRunId?.toString(),
@@ -53,12 +93,12 @@ class EventArchiveService(
             "graph" to event.graph.toString(),
             "timestamp" to event.timestamp,
         )
-        saveAsFile(conceptDir, path, payload)
-        LOGGER.debug("Concept event saved to {}", path)
+        saveAsFile(conceptDir, filename, payload)
+        LOGGER.debug("Concept event saved to {}", filename)
     }
 
     fun saveDataService(event: DataServiceEvent) {
-        val path = "${event.timestamp}_${event.fdkId}.json"
+        val filename = "${event.timestamp}_${event.fdkId}.json"
         val payload = mapOf(
             "type" to event.type.name,
             "harvestRunId" to event.harvestRunId?.toString(),
@@ -67,12 +107,12 @@ class EventArchiveService(
             "graph" to event.graph.toString(),
             "timestamp" to event.timestamp,
         )
-        saveAsFile(dataServiceDir, path, payload)
-        LOGGER.debug("DataService event saved to {}", path)
+        saveAsFile(dataServiceDir, filename, payload)
+        LOGGER.debug("DataService event saved to {}", filename)
     }
 
     fun saveInformationModel(event: InformationModelEvent) {
-        val path = "${event.timestamp}_${event.fdkId}.json"
+        val filename = "${event.timestamp}_${event.fdkId}.json"
         val payload = mapOf(
             "type" to event.type.name,
             "harvestRunId" to event.harvestRunId?.toString(),
@@ -81,12 +121,12 @@ class EventArchiveService(
             "graph" to event.graph.toString(),
             "timestamp" to event.timestamp,
         )
-        saveAsFile(informationModelDir, path, payload)
-        LOGGER.debug("InformationModel event saved to {}", path)
+        saveAsFile(informationModelDir, filename, payload)
+        LOGGER.debug("InformationModel event saved to {}", filename)
     }
 
     fun saveEvent(event: EventEvent) {
-        val path = "${event.timestamp}_${event.fdkId}.json"
+        val filename = "${event.timestamp}_${event.fdkId}.json"
         val payload = mapOf(
             "type" to event.type.name,
             "harvestRunId" to event.harvestRunId?.toString(),
@@ -95,12 +135,12 @@ class EventArchiveService(
             "graph" to event.graph.toString(),
             "timestamp" to event.timestamp,
         )
-        saveAsFile(eventDir, path, payload)
-        LOGGER.debug("Event event saved to {}", path)
+        saveAsFile(eventDir, filename, payload)
+        LOGGER.debug("Event event saved to {}", filename)
     }
 
     fun saveService(event: ServiceEvent) {
-        val path = "${event.timestamp}_${event.fdkId}.json"
+        val filename = "${event.timestamp}_${event.fdkId}.json"
         val payload = mapOf(
             "type" to event.type.name,
             "harvestRunId" to event.harvestRunId?.toString(),
@@ -109,8 +149,8 @@ class EventArchiveService(
             "graph" to event.graph.toString(),
             "timestamp" to event.timestamp,
         )
-        saveAsFile(serviceDir, path, payload)
-        LOGGER.debug("Service event saved to {}", path)
+        saveAsFile(serviceDir, filename, payload)
+        LOGGER.debug("Service event saved to {}", filename)
     }
 
     private fun saveAsFile(dir: String, filename: String, payload: Map<String, Any?>) {
