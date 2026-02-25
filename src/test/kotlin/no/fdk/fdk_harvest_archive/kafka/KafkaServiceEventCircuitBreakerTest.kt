@@ -6,7 +6,6 @@ import io.mockk.verify
 import no.fdk.fdk_harvest_archive.archive.EventArchiveService
 import no.fdk.service.ServiceEvent
 import no.fdk.service.ServiceEventType
-import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
@@ -18,7 +17,7 @@ class KafkaServiceEventCircuitBreakerTest {
     private val circuitBreaker = KafkaServiceEventCircuitBreaker(eventArchiveService)
 
     @Test
-    fun `process calls eventArchiveService saveService with record value`() {
+    fun `process calls eventArchiveService saveService with event`() {
         val event = ServiceEvent.newBuilder()
             .setType(ServiceEventType.SERVICE_HARVESTED)
             .setHarvestRunId("run-1")
@@ -27,13 +26,27 @@ class KafkaServiceEventCircuitBreakerTest {
             .setGraph("<> a <http://example.org/Service> .")
             .setTimestamp(1700000000000L)
             .build()
-        val record = ConsumerRecord<String, ServiceEvent>("service-events", 0, 42L, "service-123", event)
-
         every { eventArchiveService.saveService(any()) } returns Unit
 
-        circuitBreaker.process(record)
+        circuitBreaker.process(event)
 
         verify(exactly = 1) { eventArchiveService.saveService(event) }
+    }
+
+    @Test
+    fun `reasoned events are skipped`() {
+        val event = ServiceEvent.newBuilder()
+            .setType(ServiceEventType.SERVICE_REASONED)
+            .setHarvestRunId("12")
+            .setUri("https://service.test")
+            .setFdkId("test-service-123")
+            .setGraph("<http://example.org/service/123>")
+            .setTimestamp(123)
+            .build()
+
+        circuitBreaker.process(event)
+
+        verify(exactly = 0) { eventArchiveService.saveService(any()) }
     }
 
     @Test
@@ -44,12 +57,10 @@ class KafkaServiceEventCircuitBreakerTest {
             .setGraph("")
             .setTimestamp(1L)
             .build()
-        val record = ConsumerRecord<String, ServiceEvent>("service-events", 1, 0L, "fail-id", event)
-
         every { eventArchiveService.saveService(any()) } throws RuntimeException("write failed")
 
         assertThrows(RuntimeException::class.java) {
-            circuitBreaker.process(record)
+            circuitBreaker.process(event)
         }
 
         verify(exactly = 1) { eventArchiveService.saveService(event) }

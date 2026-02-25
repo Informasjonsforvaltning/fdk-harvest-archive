@@ -6,7 +6,6 @@ import io.mockk.verify
 import no.fdk.dataset.DatasetEvent
 import no.fdk.dataset.DatasetEventType
 import no.fdk.fdk_harvest_archive.archive.EventArchiveService
-import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
@@ -18,7 +17,7 @@ class KafkaDatasetEventCircuitBreakerTest {
     private val circuitBreaker = KafkaDatasetEventCircuitBreaker(eventArchiveService)
 
     @Test
-    fun `process calls eventArchiveService saveDataset with record value`() {
+    fun `process calls eventArchiveService saveDataset with event`() {
         val event = DatasetEvent.newBuilder()
             .setType(DatasetEventType.DATASET_HARVESTED)
             .setHarvestRunId("run-1")
@@ -27,13 +26,27 @@ class KafkaDatasetEventCircuitBreakerTest {
             .setGraph("<> a <http://example.org/Dataset> .")
             .setTimestamp(1700000000000L)
             .build()
-        val record = ConsumerRecord("dataset-events", 0, 42L, "fdk-123", event)
-
         every { eventArchiveService.saveDataset(any()) } returns Unit
 
-        circuitBreaker.process(record)
+        circuitBreaker.process(event)
 
         verify(exactly = 1) { eventArchiveService.saveDataset(event) }
+    }
+
+    @Test
+    fun `reasoned events are skipped`() {
+        val event = DatasetEvent.newBuilder()
+            .setType(DatasetEventType.DATASET_REASONED)
+            .setHarvestRunId("12")
+            .setUri("https://dataset.test")
+            .setFdkId("test-dataset-123")
+            .setGraph("<http://example.org/dataset/123>")
+            .setTimestamp(123)
+            .build()
+
+        circuitBreaker.process(event)
+
+        verify(exactly = 0) { eventArchiveService.saveDataset(any()) }
     }
 
     @Test
@@ -44,12 +57,10 @@ class KafkaDatasetEventCircuitBreakerTest {
             .setGraph("")
             .setTimestamp(1L)
             .build()
-        val record = ConsumerRecord("dataset-events", 1, 0L, "fail-id", event)
-
         every { eventArchiveService.saveDataset(any()) } throws RuntimeException("write failed")
 
         assertThrows(RuntimeException::class.java) {
-            circuitBreaker.process(record)
+            circuitBreaker.process(event)
         }
 
         verify(exactly = 1) { eventArchiveService.saveDataset(event) }

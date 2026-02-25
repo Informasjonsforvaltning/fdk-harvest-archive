@@ -5,6 +5,7 @@ import io.mockk.mockk
 import io.mockk.verify
 import no.fdk.service.ServiceEvent
 import no.fdk.service.ServiceEventType
+import org.apache.avro.generic.GenericRecord
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Tag
@@ -16,7 +17,8 @@ import java.time.Duration
 class KafkaServiceEventConsumerTest {
 
     private val circuitBreaker: KafkaServiceEventCircuitBreaker = mockk()
-    private val consumer = KafkaServiceEventConsumer(circuitBreaker)
+    private val genericCircuitBreaker: KafkaGenericCircuitBreaker = mockk(relaxed = true)
+    private val consumer = KafkaServiceEventConsumer(circuitBreaker, genericCircuitBreaker)
     private val ack: Acknowledgment = mockk(relaxed = true)
 
     @Test
@@ -27,21 +29,17 @@ class KafkaServiceEventConsumerTest {
     }
 
     @Test
-    fun `consumeServiceEvent skips SERVICE_REASONED and acknowledges`() {
-        val event = ServiceEvent.newBuilder()
-            .setType(ServiceEventType.SERVICE_REASONED)
-            .setHarvestRunId("12")
-            .setUri("https://service.test")
-            .setFdkId("test-service-123")
-            .setGraph("<http://example.org/service/123> a <http://www.w3.org/ns/dcat#DataService> .")
-            .setTimestamp(123)
-            .build()
-        val record = ConsumerRecord("service-events", 0, 0L, "key", event)
+    fun `consumeServiceEvent delegates generic record to generic circuit breaker with topic and acknowledges`() {
+        val genericRecord = mockk<GenericRecord>(relaxed = true)
+        val record: ConsumerRecord<String, Any> = ConsumerRecord("service-events", 0, 0L, "key", genericRecord)
+
+        every { genericCircuitBreaker.process(any(), any()) } returns Unit
 
         consumer.consumeServiceEvent(record, ack)
 
+        verify(exactly = 1) { genericCircuitBreaker.process(genericRecord, "service-events") }
+        verify(exactly = 0) { circuitBreaker.process(any<ServiceEvent>()) }
         verify(exactly = 1) { ack.acknowledge() }
-        verify(exactly = 0) { circuitBreaker.process(any()) }
         verify(exactly = 0) { ack.nack(any<Duration>()) }
     }
 
@@ -55,13 +53,14 @@ class KafkaServiceEventConsumerTest {
             .setGraph("<http://example.org/service/123> a <http://www.w3.org/ns/dcat#DataService> .")
             .setTimestamp(123)
             .build()
-        val record = ConsumerRecord("service-events", 0, 0L, "key", event)
+        val record: ConsumerRecord<String, Any> = ConsumerRecord("service-events", 0, 0L, "key", event as Any)
 
         every { circuitBreaker.process(any()) } returns Unit
 
         consumer.consumeServiceEvent(record, ack)
 
-        verify(exactly = 1) { circuitBreaker.process(record) }
+        verify(exactly = 1) { circuitBreaker.process(event) }
+        verify(exactly = 0) { genericCircuitBreaker.process(any(), "service-events") }
         verify(exactly = 1) { ack.acknowledge() }
         verify(exactly = 0) { ack.nack(any<Duration>()) }
     }
@@ -76,13 +75,14 @@ class KafkaServiceEventConsumerTest {
             .setGraph("")
             .setTimestamp(123)
             .build()
-        val record = ConsumerRecord("service-events", 0, 0L, "key", event)
+        val record: ConsumerRecord<String, Any> = ConsumerRecord("service-events", 0, 0L, "key", event as Any)
 
         every { circuitBreaker.process(any()) } returns Unit
 
         consumer.consumeServiceEvent(record, ack)
 
-        verify(exactly = 1) { circuitBreaker.process(record) }
+        verify(exactly = 1) { circuitBreaker.process(event) }
+        verify(exactly = 0) { genericCircuitBreaker.process(any(), "service-events") }
         verify(exactly = 1) { ack.acknowledge() }
         verify(exactly = 0) { ack.nack(any<Duration>()) }
     }
@@ -97,13 +97,14 @@ class KafkaServiceEventConsumerTest {
             .setGraph("<http://example.org/service/123> a <http://www.w3.org/ns/dcat#DataService> .")
             .setTimestamp(123)
             .build()
-        val record = ConsumerRecord("service-events", 0, 0L, "key", event)
+        val record: ConsumerRecord<String, Any> = ConsumerRecord("service-events", 0, 0L, "key", event as Any)
 
         every { circuitBreaker.process(any()) } throws RuntimeException("boom")
 
         consumer.consumeServiceEvent(record, ack)
 
-        verify(exactly = 1) { circuitBreaker.process(record) }
+        verify(exactly = 1) { circuitBreaker.process(event) }
+        verify(exactly = 0) { genericCircuitBreaker.process(any(), "service-events") }
         verify(exactly = 1) { ack.nack(Duration.ZERO) }
         verify(exactly = 0) { ack.acknowledge() }
     }

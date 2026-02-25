@@ -6,7 +6,6 @@ import io.mockk.verify
 import no.fdk.fdk_harvest_archive.archive.EventArchiveService
 import no.fdk.informationmodel.InformationModelEvent
 import no.fdk.informationmodel.InformationModelEventType
-import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
@@ -18,7 +17,7 @@ class KafkaInformationModelEventCircuitBreakerTest {
     private val circuitBreaker = KafkaInformationModelEventCircuitBreaker(eventArchiveService)
 
     @Test
-    fun `process calls eventArchiveService saveInformationModel with record value`() {
+    fun `process calls eventArchiveService saveInformationModel with event`() {
         val event = InformationModelEvent.newBuilder()
             .setType(InformationModelEventType.INFORMATION_MODEL_HARVESTED)
             .setHarvestRunId("run-1")
@@ -27,13 +26,27 @@ class KafkaInformationModelEventCircuitBreakerTest {
             .setGraph("<> a <http://example.org/InformationModel> .")
             .setTimestamp(1700000000000L)
             .build()
-        val record = ConsumerRecord<String, InformationModelEvent>("information-model-events", 0, 42L, "informationmodel-123", event)
-
         every { eventArchiveService.saveInformationModel(any()) } returns Unit
 
-        circuitBreaker.process(record)
+        circuitBreaker.process(event)
 
         verify(exactly = 1) { eventArchiveService.saveInformationModel(event) }
+    }
+
+    @Test
+    fun `reasoned events are skipped`() {
+        val event = InformationModelEvent.newBuilder()
+            .setType(InformationModelEventType.INFORMATION_MODEL_REASONED)
+            .setHarvestRunId("12")
+            .setUri("https://informationmodel.test")
+            .setFdkId("test-informationmodel-123")
+            .setGraph("<http://example.org/informationmodel/123>")
+            .setTimestamp(123)
+            .build()
+
+        circuitBreaker.process(event)
+
+        verify(exactly = 0) { eventArchiveService.saveInformationModel(any()) }
     }
 
     @Test
@@ -44,12 +57,10 @@ class KafkaInformationModelEventCircuitBreakerTest {
             .setGraph("")
             .setTimestamp(1L)
             .build()
-        val record = ConsumerRecord<String, InformationModelEvent>("information-model-events", 1, 0L, "fail-id", event)
-
         every { eventArchiveService.saveInformationModel(any()) } throws RuntimeException("write failed")
 
         assertThrows(RuntimeException::class.java) {
-            circuitBreaker.process(record)
+            circuitBreaker.process(event)
         }
 
         verify(exactly = 1) { eventArchiveService.saveInformationModel(event) }

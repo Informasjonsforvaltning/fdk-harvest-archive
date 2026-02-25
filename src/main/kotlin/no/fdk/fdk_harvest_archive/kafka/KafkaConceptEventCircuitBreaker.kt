@@ -2,8 +2,8 @@ package no.fdk.fdk_harvest_archive.kafka
 
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker
 import no.fdk.concept.ConceptEvent
+import no.fdk.concept.ConceptEventType
 import no.fdk.fdk_harvest_archive.archive.EventArchiveService
-import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -18,10 +18,12 @@ open class KafkaConceptEventCircuitBreaker(
 ) : KafkaCircuitBreakerApi<ConceptEvent> {
 
     @CircuitBreaker(name = CIRCUIT_BREAKER_ID)
-    override fun process(record: ConsumerRecord<String, ConceptEvent>) {
-        val event = record.value()
+    override fun process(event: ConceptEvent) {
+        if (event.type != ConceptEventType.CONCEPT_HARVESTED && event.type != ConceptEventType.CONCEPT_REMOVED) {
+            LOGGER.debug("Skipping concept event with type {}.", event.type)
+            return
+        }
 
-        LOGGER.debug("Processing concept event - offset: {}, partition: {}", record.offset(), record.partition())
         try {
             eventArchiveService.saveConcept(event)
         } catch (e: Exception) {
@@ -35,4 +37,3 @@ open class KafkaConceptEventCircuitBreaker(
         const val CIRCUIT_BREAKER_ID = "concept-archive-cb"
     }
 }
-

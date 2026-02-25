@@ -2,8 +2,8 @@ package no.fdk.fdk_harvest_archive.kafka
 
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker
 import no.fdk.event.EventEvent
+import no.fdk.event.EventEventType
 import no.fdk.fdk_harvest_archive.archive.EventArchiveService
-import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -18,10 +18,12 @@ open class KafkaEventEventCircuitBreaker(
 ) : KafkaCircuitBreakerApi<EventEvent> {
 
     @CircuitBreaker(name = CIRCUIT_BREAKER_ID)
-    override fun process(record: ConsumerRecord<String, EventEvent>) {
-        val event = record.value()
+    override fun process(event: EventEvent) {
+        if (event.type != EventEventType.EVENT_HARVESTED && event.type != EventEventType.EVENT_REMOVED) {
+            LOGGER.debug("Skipping event event with type {}.", event.type)
+            return
+        }
 
-        LOGGER.debug("Processing event event - offset: {}, partition: {}", record.offset(), record.partition())
         try {
             eventArchiveService.saveEvent(event)
         } catch (e: Exception) {
