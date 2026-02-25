@@ -1,12 +1,5 @@
 <configuration>
 
-    <appender name="compact" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder>
-            <pattern>${CONSOLE_LOG_PATTERN}</pattern>
-            <charset>utf8</charset>
-        </encoder>
-    </appender>
-
     <appender name="json" class="ch.qos.logback.core.ConsoleAppender">
         <target>System.out</target>
         <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
@@ -29,7 +22,7 @@
         <appender-ref ref="json"/>
     </appender>
 
-    <logger name="no.fdk" level="debug" additivity="false">
+    <logger name="no.fdk" level="info" additivity="false">
         <appender-ref ref="${LOG_FORMAT:-json-async}" />
     </logger>
 
