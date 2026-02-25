@@ -1,0 +1,19 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    fdk.service: fdk-harvest-archive
+  name: fdk-harvest-archive
+spec:
+  type: NodePort
+  ports:
+  - name: "8080"
+    port: 8080
+    targetPort: 8080
+  selector:
+    fdk.service: fdk-harvest-archive
+status:
+  loadBalancer: {}
+

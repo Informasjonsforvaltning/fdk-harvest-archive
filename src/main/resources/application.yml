@@ -14,7 +14,7 @@ spring:
   aop:
     proxy-target-class: false
   kafka:
-    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS}
     properties:
       specific.avro.reader: false
       auto.register.schemas: false
@@ -27,7 +27,7 @@ spring:
       enable-auto-commit: false
       value-deserializer: io.confluent.kafka.serializers.KafkaAvroDeserializer
       properties:
-        schema.registry.url: ${SPRING_KAFKA_CONSUMER_PROPERTIES_SCHEMA_REGISTRY_URL:http://localhost:8081}
+        schema.registry.url: ${SPRING_KAFKA_CONSUMER_PROPERTIES_SCHEMA_REGISTRY_URL}
     listener:
       ack-mode: manual_immediate
       # false = app starts even when Kafka is down (listener can be started later when Kafka is available)
@@ -35,12 +35,12 @@ spring:
 
 app:
   archive:
-    dataset-dir: ${APP_ARCHIVE_DATASET_DIR:archive/datasets}
-    concept-dir: ${APP_ARCHIVE_CONCEPT_DIR:archive/concepts}
-    data-service-dir: ${APP_ARCHIVE_DATASERVICE_DIR:archive/data_services}
-    information-model-dir: ${APP_ARCHIVE_INFORMATIONMODEL_DIR:archive/information_models}
-    event-dir: ${APP_ARCHIVE_EVENT_DIR:archive/events}
-    service-dir: ${APP_ARCHIVE_SERVICE_DIR:archive/services}
+    dataset-dir: ${APP_ARCHIVE_DATASET_DIR}
+    concept-dir: ${APP_ARCHIVE_CONCEPT_DIR}
+    data-service-dir: ${APP_ARCHIVE_DATASERVICE_DIR}
+    information-model-dir: ${APP_ARCHIVE_INFORMATIONMODEL_DIR}
+    event-dir: ${APP_ARCHIVE_EVENT_DIR}
+    service-dir: ${APP_ARCHIVE_SERVICE_DIR}
 
 resilience4j:
   circuitbreaker:

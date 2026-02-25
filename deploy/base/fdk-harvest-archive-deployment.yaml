@@ -1,0 +1,80 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    fdk.service: fdk-harvest-archive
+  name: fdk-harvest-archive
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      fdk.service: fdk-harvest-archive
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        fdk.service: fdk-harvest-archive
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/actuator/prometheus"
+    spec:
+      containers:
+        - name: fdk-harvest-archive
+          image: fdk-harvest-archive
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: LOG_LEVEL
+              value: "INFO"
+            - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                secretKeyRef:
+                  name: kafka
+                  key: BROKERS
+            - name: SPRING_KAFKA_CONSUMER_PROPERTIES_SCHEMA_REGISTRY_URL
+              valueFrom:
+                secretKeyRef:
+                  name: kafka
+                  key: SCHEMA_REGISTRY
+            - name: APP_ARCHIVE_DATASET_DIR
+              value: "archive/datasets"
+            - name: APP_ARCHIVE_CONCEPT_DIR
+              value: "archive/concepts"
+            - name: APP_ARCHIVE_DATASERVICE_DIR
+              value: "archive/data_services"
+            - name: APP_ARCHIVE_INFORMATIONMODEL_DIR
+              value: "archive/information_models"
+            - name: APP_ARCHIVE_EVENT_DIR
+              value: "archive/events"
+            - name: APP_ARCHIVE_SERVICE_DIR
+              value: "archive/services"
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "2"
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            successThreshold: 1
+            failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            successThreshold: 1
+            failureThreshold: 5
+      restartPolicy: Always
+
