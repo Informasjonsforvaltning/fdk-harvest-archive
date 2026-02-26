@@ -3,9 +3,11 @@ package no.fdk.fdk_harvest_archive
 import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan
+import org.springframework.scheduling.annotation.EnableScheduling
 
 @SpringBootApplication
 @ConfigurationPropertiesScan
+@EnableScheduling
 open class Application
 
 fun main(args: Array<String>) {

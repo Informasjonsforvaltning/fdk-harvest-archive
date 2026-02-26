@@ -61,6 +61,7 @@ class HarvestArchiveIT {
             registry.add("app.archive.information-model-dir") { archiveRoot.resolve("information_models").toString() }
             registry.add("app.archive.event-dir") { archiveRoot.resolve("events").toString() }
             registry.add("app.archive.service-dir") { archiveRoot.resolve("services").toString() }
+            registry.add("app.archive.zip-check-interval-ms") { "300000" }
         }
     }
 
