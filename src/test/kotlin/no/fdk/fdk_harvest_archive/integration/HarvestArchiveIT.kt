@@ -83,10 +83,10 @@ class HarvestArchiveIT {
 
         val datasetDir = archiveRoot.resolve("datasets")
         val expectedFile = datasetDir.resolve("${timestamp}_${fdkId}.json")
-        val found = awaitFile(expectedFile, timeoutSeconds = 30)
-        Assertions.assertThat(found).isTrue()
-        val content = expectedFile.toFile().readText()
+        val content = awaitFileWithContent(expectedFile, fdkId, timeoutSeconds = 30)
         Assertions.assertThat(content)
+            .withFailMessage("Archive file did not contain '%s' within 30s: %s", fdkId, expectedFile)
+            .isNotNull
             .contains(fdkId)
             .contains("DATASET_HARVESTED")
             .contains("https://example.com/dataset")
@@ -110,9 +110,10 @@ class HarvestArchiveIT {
 
         val conceptDir = archiveRoot.resolve("concepts")
         val expectedFile = conceptDir.resolve("${timestamp}_${fdkId}.json")
-        Assertions.assertThat(awaitFile(expectedFile, 30)).isTrue()
-        val content = expectedFile.toFile().readText()
+        val content = awaitFileWithContent(expectedFile, fdkId, timeoutSeconds = 30)
         Assertions.assertThat(content)
+            .withFailMessage("Archive file did not contain '%s' within 30s: %s", fdkId, expectedFile)
+            .isNotNull
             .contains(fdkId)
             .contains("CONCEPT_HARVESTED")
             .contains("https://example.com/concept")
@@ -136,9 +137,10 @@ class HarvestArchiveIT {
 
         val dataserviceDir = archiveRoot.resolve("data_services")
         val expectedFile = dataserviceDir.resolve("${timestamp}_${fdkId}.json")
-        Assertions.assertThat(awaitFile(expectedFile, 30)).isTrue()
-        val content = expectedFile.toFile().readText()
+        val content = awaitFileWithContent(expectedFile, fdkId, timeoutSeconds = 30)
         Assertions.assertThat(content)
+            .withFailMessage("Archive file did not contain '%s' within 30s: %s", fdkId, expectedFile)
+            .isNotNull
             .contains(fdkId)
             .contains("DATA_SERVICE_HARVESTED")
             .contains("https://example.com/dataservice")
@@ -162,9 +164,10 @@ class HarvestArchiveIT {
 
         val informationmodelDir = archiveRoot.resolve("information_models")
         val expectedFile = informationmodelDir.resolve("${timestamp}_${fdkId}.json")
-        Assertions.assertThat(awaitFile(expectedFile, 30)).isTrue()
-        val content = expectedFile.toFile().readText()
+        val content = awaitFileWithContent(expectedFile, fdkId, timeoutSeconds = 30)
         Assertions.assertThat(content)
+            .withFailMessage("Archive file did not contain '%s' within 30s: %s", fdkId, expectedFile)
+            .isNotNull
             .contains(fdkId)
             .contains("INFORMATION_MODEL_HARVESTED")
             .contains("https://example.com/informationmodel")
@@ -188,9 +191,10 @@ class HarvestArchiveIT {
 
         val eventDir = archiveRoot.resolve("events")
         val expectedFile = eventDir.resolve("${timestamp}_${fdkId}.json")
-        Assertions.assertThat(awaitFile(expectedFile, 30)).isTrue()
-        val content = expectedFile.toFile().readText()
+        val content = awaitFileWithContent(expectedFile, fdkId, timeoutSeconds = 30)
         Assertions.assertThat(content)
+            .withFailMessage("Archive file did not contain '%s' within 30s: %s", fdkId, expectedFile)
+            .isNotNull
             .contains(fdkId)
             .contains("EVENT_HARVESTED")
             .contains("https://example.com/event")
@@ -214,9 +218,10 @@ class HarvestArchiveIT {
 
         val serviceDir = archiveRoot.resolve("services")
         val expectedFile = serviceDir.resolve("${timestamp}_${fdkId}.json")
-        Assertions.assertThat(awaitFile(expectedFile, 30)).isTrue()
-        val content = expectedFile.toFile().readText()
+        val content = awaitFileWithContent(expectedFile, fdkId, timeoutSeconds = 30)
         Assertions.assertThat(content)
+            .withFailMessage("Archive file did not contain '%s' within 30s: %s", fdkId, expectedFile)
+            .isNotNull
             .contains(fdkId)
             .contains("SERVICE_HARVESTED")
             .contains("https://example.com/service")
@@ -234,12 +239,20 @@ class HarvestArchiveIT {
         }
     }
 
-    private fun awaitFile(path: Path, timeoutSeconds: Long): Boolean {
+    private fun awaitFileWithContent(path: Path, expectedSubstring: String, timeoutSeconds: Long): String? {
         val deadline = System.currentTimeMillis() + timeoutSeconds * 1000
+        val pollIntervalMs = 200L
         while (System.currentTimeMillis() < deadline) {
-            if (path.toFile().exists()) return true
-            Thread.sleep(500)
+            if (path.toFile().exists()) {
+                val content = try {
+                    path.toFile().readText()
+                } catch (_: Exception) {
+                    null
+                }
+                if (content != null && content.contains(expectedSubstring)) return content
+            }
+            Thread.sleep(pollIntervalMs)
         }
-        return false
+        return null
     }
 }
