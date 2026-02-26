@@ -40,6 +40,7 @@ app:
     information-model-dir: ${APP_ARCHIVE_INFORMATIONMODEL_DIR}
     event-dir: ${APP_ARCHIVE_EVENT_DIR}
     service-dir: ${APP_ARCHIVE_SERVICE_DIR}
+    zip-check-interval-ms: ${APP_ARCHIVE_ZIP_CHECK_INTERVAL_MS}
 
 resilience4j:
   circuitbreaker:
@@ -97,3 +98,4 @@ app:
     information-model-dir: dev-archive/information_models
     event-dir: dev-archive/events
     service-dir: dev-archive/services
+    zip-check-interval-ms: 300000

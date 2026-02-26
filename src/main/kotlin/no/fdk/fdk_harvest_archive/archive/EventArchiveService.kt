@@ -16,9 +16,13 @@ import no.fdk.service.ServiceEventType
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import java.nio.file.Files
+import java.nio.file.Path
 import java.nio.file.Paths
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 
 /**
  * Persists harvest events as JSON files under type-specific directories.
@@ -34,6 +38,7 @@ class EventArchiveService(
     @param:Value($$"${app.archive.service-dir}") private val serviceDir: String,
 ) {
     private val objectMapper = jacksonObjectMapper()
+    private val zipThresholdBytes: Long = ZIP_THRESHOLD_BYTES
 
     private val topicToDir: Map<String, String> = mapOf(
         "dataset-events" to datasetDir,
@@ -160,7 +165,60 @@ class EventArchiveService(
         objectMapper.writeValue(path.toFile(), payload)
     }
 
+    /**
+     * Periodically checks each archive directory size and creates a zip (and deletes source files) when over threshold.
+     */
+    @Scheduled(fixedDelayString = $$"${app.archive.zip-check-interval-ms}")
+    fun checkArchiveDirsAndZipIfOverThreshold() {
+        listOf(datasetDir, conceptDir, dataServiceDir, informationModelDir, eventDir, serviceDir)
+            .map { Paths.get(it) }
+            .filter { Files.exists(it) }
+            .forEach { createZipIfLargerThanThreshold(it) }
+    }
+
+    private fun createZipIfLargerThanThreshold(dirPath: Path, thresholdBytes: Long = zipThresholdBytes) {
+        val totalSize = Files.walk(dirPath)
+            .filter { Files.isRegularFile(it) }
+            .mapToLong { Files.size(it) }
+            .sum()
+
+        if (totalSize < thresholdBytes) return
+
+        val parent = dirPath.parent ?: return
+        val zipFileName = "${dirPath.fileName}-${System.currentTimeMillis()}.zip"
+        val zipPath = parent.resolve(zipFileName)
+
+        val filesToArchive = Files.walk(dirPath)
+            .filter { Files.isRegularFile(it) }
+            .toList()
+
+        if (filesToArchive.isEmpty()) return
+
+        ZipOutputStream(Files.newOutputStream(zipPath)).use { zipOut ->
+            filesToArchive.forEach { file ->
+                val entryName = dirPath.relativize(file).toString()
+                zipOut.putNextEntry(ZipEntry(entryName))
+                Files.newInputStream(file).use { input ->
+                    input.copyTo(zipOut)
+                }
+                zipOut.closeEntry()
+            }
+        }
+
+        // Delete files after successful zipping to avoid duplicate storage.
+        filesToArchive.forEach { file ->
+            try {
+                Files.deleteIfExists(file)
+            } catch (ex: Exception) {
+                LOGGER.warn("Failed to delete archived file {}", file, ex)
+            }
+        }
+
+        LOGGER.debug("Created zip archive {} for directory {} (size {} bytes). Archived and deleted {} files.", zipPath.fileName, dirPath, totalSize, filesToArchive.size)
+    }
+
     companion object {
         private val LOGGER: Logger = LoggerFactory.getLogger(EventArchiveService::class.java)
+        private const val ZIP_THRESHOLD_BYTES: Long = 10L * 1024 * 1024 * 1024 // 10 GiB
     }
 }
