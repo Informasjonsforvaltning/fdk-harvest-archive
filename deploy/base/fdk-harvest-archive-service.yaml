@@ -16,4 +16,3 @@ spec:
     fdk.service: fdk-harvest-archive
 status:
   loadBalancer: {}
-

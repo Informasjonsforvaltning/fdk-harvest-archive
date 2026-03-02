@@ -1,0 +1,49 @@
+name: Deploy to production & demo
+permissions:
+  contents: read
+  packages: write
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-fdk-harvest-archive:
+    name: Build on merge to main branch
+    uses: Informasjonsforvaltning/workflows/.github/workflows/build-push.yaml@main
+    with:
+      app_name: fdk-harvest-archive
+      environment: prod
+      gh_environment: prod
+      java_version: '21'
+      coverage_file_path: ./target/site/jacoco/jacoco.xml
+    secrets:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy-to-prod:
+    needs: build-fdk-harvest-archive
+    name: Deploy to prod if build is successful
+    uses: Informasjonsforvaltning/workflows/.github/workflows/kustomize-deploy.yaml@main
+    with:
+      app_name: fdk-harvest-archive
+      environment: prod
+      cluster: digdir-fdk-prod
+    secrets:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      DIGDIR_FDK_AUTODEPLOY: ${{ secrets.DIGDIR_FDK_PROD_AUTODEPLOY }}
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  deploy-to-demo:
+    needs: deploy-to-prod
+    name: Deploy to demo if prod-deploy is successful
+    uses: Informasjonsforvaltning/workflows/.github/workflows/kustomize-deploy.yaml@main
+    with:
+      app_name: fdk-harvest-archive
+      environment: demo
+      cluster: digdir-fdk-dev
+    secrets:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      DIGDIR_FDK_AUTODEPLOY: ${{ secrets.DIGDIR_FDK_DEV_AUTODEPLOY }}
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      DEPENDABOT_SLACK_WEBHOOK_URL: ${{ secrets.DEPENDABOT_SLACK_WEBHOOK_URL }}
