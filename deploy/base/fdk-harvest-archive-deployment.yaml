@@ -79,4 +79,3 @@ spec:
             successThreshold: 1
             failureThreshold: 5
       restartPolicy: Always
-
