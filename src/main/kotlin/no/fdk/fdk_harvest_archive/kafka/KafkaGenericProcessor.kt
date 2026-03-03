@@ -1,23 +1,16 @@
 package no.fdk.fdk_harvest_archive.kafka
 
-import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker
 import no.fdk.fdk_harvest_archive.archive.EventArchiveService
 import org.apache.avro.generic.GenericRecord
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
-/**
- * Handles generic Avro records (e.g. when Schema Registry is unavailable).
- * Call [process] with the topic so the event is archived to the correct directory;
- * only HARVESTED and REMOVED types are persisted.
- */
 @Component
-open class KafkaGenericCircuitBreaker(
+open class KafkaGenericProcessor(
     private val eventArchiveService: EventArchiveService,
 ) {
 
-    @CircuitBreaker(name = CIRCUIT_BREAKER_ID)
     fun process(event: GenericRecord, topic: String) {
         try {
             val payload = mapOf<String, Any?>(
@@ -36,7 +29,6 @@ open class KafkaGenericCircuitBreaker(
     }
 
     companion object {
-        private val LOGGER: Logger = LoggerFactory.getLogger(KafkaGenericCircuitBreaker::class.java)
-        const val CIRCUIT_BREAKER_ID = "generic-archive-cb"
+        private val LOGGER: Logger = LoggerFactory.getLogger(KafkaGenericProcessor::class.java)
     }
 }

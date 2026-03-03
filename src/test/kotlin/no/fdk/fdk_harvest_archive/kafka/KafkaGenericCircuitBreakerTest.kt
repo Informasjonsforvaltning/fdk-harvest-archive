@@ -11,10 +11,10 @@ import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 
 @Tag("unit")
-class KafkaGenericCircuitBreakerTest {
+class KafkaGenericProcessorTest {
 
     private val eventArchiveService = mockk<EventArchiveService>(relaxed = true)
-    private val circuitBreaker = KafkaGenericCircuitBreaker(eventArchiveService)
+    private val processor = KafkaGenericProcessor(eventArchiveService)
 
     @Test
     fun `process calls eventArchiveService saveGenericForTopic with topic and payload from generic record`() {
@@ -28,7 +28,7 @@ class KafkaGenericCircuitBreakerTest {
 
         every { eventArchiveService.saveGenericForTopic(any(), any()) } returns Unit
 
-        circuitBreaker.process(genericRecord, "dataset-events")
+        processor.process(genericRecord, "dataset-events")
 
         verify(exactly = 1) {
             eventArchiveService.saveGenericForTopic(
@@ -57,7 +57,7 @@ class KafkaGenericCircuitBreakerTest {
 
         every { eventArchiveService.saveGenericForTopic(any(), any()) } returns Unit
 
-        circuitBreaker.process(genericRecord, "concept-events")
+        processor.process(genericRecord, "concept-events")
 
         verify(exactly = 1) {
             eventArchiveService.saveGenericForTopic(
@@ -82,7 +82,7 @@ class KafkaGenericCircuitBreakerTest {
         every { eventArchiveService.saveGenericForTopic(any(), any()) } throws RuntimeException("write failed")
 
         val thrown = assertThrows(RuntimeException::class.java) {
-            circuitBreaker.process(genericRecord, "dataset-events")
+            processor.process(genericRecord, "dataset-events")
         }
         assertEquals("write failed", thrown.message)
 

@@ -14,7 +14,11 @@ import org.junit.jupiter.api.Test
 class KafkaDataServiceEventCircuitBreakerTest {
 
     private val eventArchiveService = mockk<EventArchiveService>(relaxed = true)
-    private val circuitBreaker = KafkaDataServiceEventCircuitBreaker(eventArchiveService)
+    private val genericProcessor = mockk<KafkaGenericProcessor>(relaxed = true)
+    private val circuitBreaker = KafkaDataServiceEventCircuitBreaker(eventArchiveService, genericProcessor)
+
+    private fun recordFor(event: DataServiceEvent): org.apache.kafka.clients.consumer.ConsumerRecord<String, Any> =
+        org.apache.kafka.clients.consumer.ConsumerRecord("data-service-events", 0, 0L, "key", event as Any)
 
     @Test
     fun `process calls eventArchiveService saveDataService with event`() {
@@ -28,7 +32,7 @@ class KafkaDataServiceEventCircuitBreakerTest {
             .build()
         every { eventArchiveService.saveDataService(any()) } returns Unit
 
-        circuitBreaker.process(event)
+        circuitBreaker.process(recordFor(event))
 
         verify(exactly = 1) { eventArchiveService.saveDataService(event) }
     }
@@ -44,7 +48,7 @@ class KafkaDataServiceEventCircuitBreakerTest {
             .setTimestamp(123)
             .build()
 
-        circuitBreaker.process(event)
+        circuitBreaker.process(recordFor(event))
 
         verify(exactly = 0) { eventArchiveService.saveDataService(any()) }
     }
@@ -60,9 +64,25 @@ class KafkaDataServiceEventCircuitBreakerTest {
         every { eventArchiveService.saveDataService(any()) } throws RuntimeException("write failed")
 
         assertThrows(RuntimeException::class.java) {
-            circuitBreaker.process(event)
+            circuitBreaker.process(recordFor(event))
         }
 
         verify(exactly = 1) { eventArchiveService.saveDataService(event) }
+    }
+
+    @Test
+    fun `unsupported value type is skipped and genericProcessor not called`() {
+        val record = org.apache.kafka.clients.consumer.ConsumerRecord<String, Any>(
+            "data-service-events",
+            0,
+            0L,
+            "key",
+            listOf("unexpected"),
+        )
+
+        circuitBreaker.process(record)
+
+        verify(exactly = 0) { eventArchiveService.saveDataService(any()) }
+        verify(exactly = 0) { genericProcessor.process(any(), any()) }
     }
 }

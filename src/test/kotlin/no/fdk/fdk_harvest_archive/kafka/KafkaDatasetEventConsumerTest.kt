@@ -17,8 +17,7 @@ import java.time.Duration
 class KafkaDatasetEventConsumerTest {
 
     private val circuitBreaker: KafkaDatasetEventCircuitBreaker = mockk()
-    private val genericCircuitBreaker: KafkaGenericCircuitBreaker = mockk(relaxed = true)
-    private val consumer = KafkaDatasetEventConsumer(circuitBreaker, genericCircuitBreaker)
+    private val consumer = KafkaDatasetEventConsumer(circuitBreaker)
     private val ack: Acknowledgment = mockk(relaxed = true)
 
     @Test
@@ -29,16 +28,15 @@ class KafkaDatasetEventConsumerTest {
     }
 
     @Test
-    fun `consumeDatasetEvent delegates generic record to generic circuit breaker with topic and acknowledges`() {
+    fun `consumeDatasetEvent delegates record to circuit breaker and acknowledges`() {
         val genericRecord = mockk<GenericRecord>(relaxed = true)
         val record: ConsumerRecord<String, Any> = ConsumerRecord("dataset-events", 0, 0L, "key", genericRecord)
 
-        every { genericCircuitBreaker.process(any(), any()) } returns Unit
+        every { circuitBreaker.process(any()) } returns Unit
 
         consumer.consumeDatasetEvent(record, ack)
 
-        verify(exactly = 1) { genericCircuitBreaker.process(genericRecord, "dataset-events") }
-        verify(exactly = 0) { circuitBreaker.process(any<DatasetEvent>()) }
+        verify(exactly = 1) { circuitBreaker.process(record) }
         verify(exactly = 1) { ack.acknowledge() }
         verify(exactly = 0) { ack.nack(any<Duration>()) }
     }
@@ -59,8 +57,7 @@ class KafkaDatasetEventConsumerTest {
 
         consumer.consumeDatasetEvent(record, ack)
 
-        verify(exactly = 1) { circuitBreaker.process(event) }
-        verify(exactly = 0) { genericCircuitBreaker.process(any(), "dataset-events") }
+        verify(exactly = 1) { circuitBreaker.process(record) }
         verify(exactly = 1) { ack.acknowledge() }
         verify(exactly = 0) { ack.nack(any<Duration>()) }
     }
@@ -81,8 +78,7 @@ class KafkaDatasetEventConsumerTest {
 
         consumer.consumeDatasetEvent(record, ack)
 
-        verify(exactly = 1) { circuitBreaker.process(event) }
-        verify(exactly = 0) { genericCircuitBreaker.process(any(), "dataset-events") }
+        verify(exactly = 1) { circuitBreaker.process(record) }
         verify(exactly = 1) { ack.acknowledge() }
         verify(exactly = 0) { ack.nack(any<Duration>()) }
     }
@@ -103,8 +99,7 @@ class KafkaDatasetEventConsumerTest {
 
         consumer.consumeDatasetEvent(record, ack)
 
-        verify(exactly = 1) { circuitBreaker.process(event) }
-        verify(exactly = 0) { genericCircuitBreaker.process(any(), "dataset-events") }
+        verify(exactly = 1) { circuitBreaker.process(record) }
         verify(exactly = 1) { ack.nack(Duration.ZERO) }
         verify(exactly = 0) { ack.acknowledge() }
     }
