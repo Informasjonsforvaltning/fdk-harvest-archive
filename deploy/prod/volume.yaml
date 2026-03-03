@@ -1,0 +1,19 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    fdk.service: fdk-harvest-archive
+  name: fdk-harvest-archive
+spec:
+  template:
+    spec:
+      containers:
+        - name: fdk-harvest-archive
+          volumeMounts:
+            - name: archive
+              mountPath: /home/default/archive
+      volumes:
+        - name: archive
+          persistentVolumeClaim:
+            claimName: fdk-harvest-archive
