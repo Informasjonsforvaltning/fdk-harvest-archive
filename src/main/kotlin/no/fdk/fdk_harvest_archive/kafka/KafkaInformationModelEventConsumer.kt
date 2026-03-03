@@ -2,8 +2,6 @@ package no.fdk.fdk_harvest_archive.kafka
 
 import no.fdk.informationmodel.InformationModelEvent
 import no.fdk.informationmodel.InformationModelEventType
-import org.apache.avro.generic.GenericRecord
-import org.apache.avro.specific.SpecificRecord
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -19,8 +17,7 @@ import java.time.Duration
  */
 @Component
 class KafkaInformationModelEventConsumer(
-    private val circuitBreaker: KafkaCircuitBreakerApi<InformationModelEvent>,
-    private val genericCircuitBreaker: KafkaGenericCircuitBreaker,
+    private val circuitBreaker: KafkaInformationModelEventCircuitBreaker,
 ) {
     private fun logger(): Logger = LOGGER
 
@@ -36,14 +33,8 @@ class KafkaInformationModelEventConsumer(
     ) {
         logger().debug("Received information model event - offset: {}, partition: {}", record.offset(), record.partition())
 
-        val event = record.value()
-
         try {
-            if (event is SpecificRecord) {
-                circuitBreaker.process(event as InformationModelEvent)
-            } else {
-                genericCircuitBreaker.process(event as GenericRecord, TOPIC)
-            }
+            circuitBreaker.process(record)
             ack.acknowledge()
         } catch (e: Exception) {
             ack.nack(Duration.ZERO)

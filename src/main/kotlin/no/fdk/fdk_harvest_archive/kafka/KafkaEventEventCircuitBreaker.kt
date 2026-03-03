@@ -4,6 +4,8 @@ import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker
 import no.fdk.event.EventEvent
 import no.fdk.event.EventEventType
 import no.fdk.fdk_harvest_archive.archive.EventArchiveService
+import org.apache.avro.generic.GenericRecord
+import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -15,19 +17,32 @@ import org.springframework.stereotype.Component
 @Component
 open class KafkaEventEventCircuitBreaker(
     private val eventArchiveService: EventArchiveService,
-) : KafkaCircuitBreakerApi<EventEvent> {
+    private val genericProcessor: KafkaGenericProcessor,
+) : KafkaCircuitBreakerApi {
 
     @CircuitBreaker(name = CIRCUIT_BREAKER_ID)
-    override fun process(event: EventEvent) {
-        if (event.type != EventEventType.EVENT_HARVESTED && event.type != EventEventType.EVENT_REMOVED) {
-            LOGGER.debug("Skipping event event with type {}.", event.type)
-            return
-        }
-
+    override fun process(record: ConsumerRecord<String, Any>) {
         try {
-            eventArchiveService.saveEvent(event)
+            when (val value = record.value()) {
+                is EventEvent -> {
+                    if (value.type != EventEventType.EVENT_HARVESTED && value.type != EventEventType.EVENT_REMOVED) {
+                        LOGGER.debug("Skipping event event with type {}.", value.type)
+                        return
+                    }
+
+                    eventArchiveService.saveEvent(value)
+                }
+
+                is GenericRecord -> genericProcessor.process(value, TOPIC)
+
+                else -> LOGGER.warn(
+                    "Skipping unsupported event record value type {} on topic {}",
+                    value?.javaClass?.name,
+                    record.topic()
+                )
+            }
         } catch (e: Exception) {
-            LOGGER.error("Error processing event event for fdkId: {}", event.fdkId, e)
+            LOGGER.error("Error processing event event", e)
             throw e
         }
     }
@@ -35,5 +50,6 @@ open class KafkaEventEventCircuitBreaker(
     companion object {
         private val LOGGER: Logger = LoggerFactory.getLogger(KafkaEventEventCircuitBreaker::class.java)
         const val CIRCUIT_BREAKER_ID = "event-archive-cb"
+        private const val TOPIC = "event-events"
     }
 }

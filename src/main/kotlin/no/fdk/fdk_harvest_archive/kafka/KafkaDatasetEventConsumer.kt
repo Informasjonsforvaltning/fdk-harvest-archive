@@ -1,8 +1,6 @@
 package no.fdk.fdk_harvest_archive.kafka
 
 import no.fdk.dataset.DatasetEvent
-import org.apache.avro.generic.GenericRecord
-import org.apache.avro.specific.SpecificRecord
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -18,8 +16,7 @@ import java.time.Duration
  */
 @Component
 class KafkaDatasetEventConsumer(
-    private val circuitBreaker: KafkaCircuitBreakerApi<DatasetEvent>,
-    private val genericCircuitBreaker: KafkaGenericCircuitBreaker,
+    private val circuitBreaker: KafkaDatasetEventCircuitBreaker,
 ) {
     private fun logger(): Logger = LOGGER
 
@@ -35,14 +32,8 @@ class KafkaDatasetEventConsumer(
     ) {
         logger().debug("Received harvest event - offset: {}, partition: {}", record.offset(), record.partition())
 
-        val event = record.value()
-
         try {
-            if (event is SpecificRecord) {
-                circuitBreaker.process(event as DatasetEvent)
-            } else {
-                genericCircuitBreaker.process(event as GenericRecord, TOPIC)
-            }
+            circuitBreaker.process(record)
             ack.acknowledge()
         } catch (e: Exception) {
             ack.nack(Duration.ZERO)

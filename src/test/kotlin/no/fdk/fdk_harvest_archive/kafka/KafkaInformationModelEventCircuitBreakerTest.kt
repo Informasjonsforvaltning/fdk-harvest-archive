@@ -14,7 +14,11 @@ import org.junit.jupiter.api.Test
 class KafkaInformationModelEventCircuitBreakerTest {
 
     private val eventArchiveService = mockk<EventArchiveService>(relaxed = true)
-    private val circuitBreaker = KafkaInformationModelEventCircuitBreaker(eventArchiveService)
+    private val genericProcessor = mockk<KafkaGenericProcessor>(relaxed = true)
+    private val circuitBreaker = KafkaInformationModelEventCircuitBreaker(eventArchiveService, genericProcessor)
+
+    private fun recordFor(event: InformationModelEvent): org.apache.kafka.clients.consumer.ConsumerRecord<String, Any> =
+        org.apache.kafka.clients.consumer.ConsumerRecord("information-model-events", 0, 0L, "key", event as Any)
 
     @Test
     fun `process calls eventArchiveService saveInformationModel with event`() {
@@ -28,7 +32,7 @@ class KafkaInformationModelEventCircuitBreakerTest {
             .build()
         every { eventArchiveService.saveInformationModel(any()) } returns Unit
 
-        circuitBreaker.process(event)
+        circuitBreaker.process(recordFor(event))
 
         verify(exactly = 1) { eventArchiveService.saveInformationModel(event) }
     }
@@ -44,7 +48,7 @@ class KafkaInformationModelEventCircuitBreakerTest {
             .setTimestamp(123)
             .build()
 
-        circuitBreaker.process(event)
+        circuitBreaker.process(recordFor(event))
 
         verify(exactly = 0) { eventArchiveService.saveInformationModel(any()) }
     }
@@ -60,9 +64,25 @@ class KafkaInformationModelEventCircuitBreakerTest {
         every { eventArchiveService.saveInformationModel(any()) } throws RuntimeException("write failed")
 
         assertThrows(RuntimeException::class.java) {
-            circuitBreaker.process(event)
+            circuitBreaker.process(recordFor(event))
         }
 
         verify(exactly = 1) { eventArchiveService.saveInformationModel(event) }
+    }
+
+    @Test
+    fun `unsupported value type is skipped and genericProcessor not called`() {
+        val record = org.apache.kafka.clients.consumer.ConsumerRecord<String, Any>(
+            "information-model-events",
+            0,
+            0L,
+            "key",
+            mapOf("unexpected" to true),
+        )
+
+        circuitBreaker.process(record)
+
+        verify(exactly = 0) { eventArchiveService.saveInformationModel(any()) }
+        verify(exactly = 0) { genericProcessor.process(any(), any()) }
     }
 }
