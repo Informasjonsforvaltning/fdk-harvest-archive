@@ -4,6 +4,8 @@ import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker
 import no.fdk.dataset.DatasetEvent
 import no.fdk.dataset.DatasetEventType
 import no.fdk.fdk_harvest_archive.archive.EventArchiveService
+import org.apache.avro.generic.GenericRecord
+import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -15,19 +17,32 @@ import org.springframework.stereotype.Component
 @Component
 open class KafkaDatasetEventCircuitBreaker(
     private val eventArchiveService: EventArchiveService,
-) : KafkaCircuitBreakerApi<DatasetEvent> {
+    private val genericProcessor: KafkaGenericProcessor,
+) : KafkaCircuitBreakerApi {
 
     @CircuitBreaker(name = CIRCUIT_BREAKER_ID)
-    override fun process(event: DatasetEvent) {
-        if (event.type != DatasetEventType.DATASET_HARVESTED && event.type != DatasetEventType.DATASET_REMOVED) {
-            LOGGER.debug("Skipping dataset event with type {}.", event.type)
-            return
-        }
-
+    override fun process(record: ConsumerRecord<String, Any>) {
         try {
-            eventArchiveService.saveDataset(event)
+            when (val value = record.value()) {
+                is DatasetEvent -> {
+                    if (value.type != DatasetEventType.DATASET_HARVESTED && value.type != DatasetEventType.DATASET_REMOVED) {
+                        LOGGER.debug("Skipping dataset event with type {}.", value.type)
+                        return
+                    }
+
+                    eventArchiveService.saveDataset(value)
+                }
+
+                is GenericRecord -> genericProcessor.process(value, TOPIC)
+
+                else -> LOGGER.warn(
+                    "Skipping unsupported dataset record value type {} on topic {}",
+                    value?.javaClass?.name,
+                    record.topic()
+                )
+            }
         } catch (e: Exception) {
-            LOGGER.error("Error processing dataset event for fdkId: {}", event.fdkId, e)
+            LOGGER.error("Error processing dataset event", e)
             throw e
         }
     }
@@ -35,5 +50,6 @@ open class KafkaDatasetEventCircuitBreaker(
     companion object {
         private val LOGGER: Logger = LoggerFactory.getLogger(KafkaDatasetEventCircuitBreaker::class.java)
         const val CIRCUIT_BREAKER_ID = "dataset-archive-cb"
+        private const val TOPIC = "dataset-events"
     }
 }

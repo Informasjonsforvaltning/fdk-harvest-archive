@@ -1,11 +1,9 @@
 package no.fdk.fdk_harvest_archive.kafka
 
-import no.fdk.concept.ConceptEvent
-import org.apache.avro.generic.GenericRecord
-import org.apache.avro.specific.SpecificRecord
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.kafka.support.Acknowledgment
 import org.springframework.stereotype.Component
@@ -18,8 +16,8 @@ import java.time.Duration
  */
 @Component
 class KafkaConceptEventConsumer(
-    private val circuitBreaker: KafkaCircuitBreakerApi<ConceptEvent>,
-    private val genericCircuitBreaker: KafkaGenericCircuitBreaker,
+    @param:Qualifier("kafkaConceptEventCircuitBreaker")
+    private val circuitBreaker: KafkaCircuitBreakerApi,
 ) {
     private fun logger(): Logger = LOGGER
 
@@ -35,14 +33,8 @@ class KafkaConceptEventConsumer(
     ) {
         logger().debug("Received concept event - offset: {}, partition: {}", record.offset(), record.partition())
 
-        val event = record.value()
-
         try {
-            if (event is SpecificRecord) {
-                circuitBreaker.process(event as ConceptEvent)
-            } else {
-                genericCircuitBreaker.process(event as GenericRecord, TOPIC)
-            }
+            circuitBreaker.process(record)
             ack.acknowledge()
         } catch (e: Exception) {
             ack.nack(Duration.ZERO)
@@ -52,6 +44,5 @@ class KafkaConceptEventConsumer(
     companion object {
         private val LOGGER: Logger = LoggerFactory.getLogger(KafkaConceptEventConsumer::class.java)
         const val LISTENER_ID = "concept-archive"
-        private const val TOPIC = "concept-events"
     }
 }
