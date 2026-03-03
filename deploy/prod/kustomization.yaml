@@ -5,3 +5,6 @@ namespace: prod
 resources:
   - ../base
   - storage.yaml
+
+patches:
+  - path: volume.yaml
