@@ -14,7 +14,7 @@
     <parent>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-parent</artifactId>
-      <version>4.0.1</version>
+      <version>4.0.3</version>
       <relativePath/>
     </parent>
 
@@ -29,7 +29,7 @@
         <maven.exec.skip>false</maven.exec.skip>
         <!--end standard properties-->
 
-        <kotlin.version>2.3.0</kotlin.version>
+        <kotlin.version>2.2.21</kotlin.version>
         <testcontainers.version>2.0.3</testcontainers.version>
         <avro.version>1.12.1</avro.version>
         <confluent.version>8.1.1</confluent.version>
@@ -157,7 +157,7 @@
         <dependency>
             <groupId>io.mockk</groupId>
             <artifactId>mockk-jvm</artifactId>
-            <version>1.13.11</version>
+            <version>1.14.9</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -380,7 +380,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.5.4</version>
+                <version>3.5.5</version>
                 <configuration>
                     <useSystemClassLoader>false</useSystemClassLoader>
                     <!--suppress UnresolvedMavenProperty -->
@@ -396,7 +396,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
-                <version>3.5.4</version>
+                <version>3.5.5</version>
                 <configuration>
                     <!--suppress UnresolvedMavenProperty -->
                     <argLine>${failsafe.jacoco.args}</argLine>
