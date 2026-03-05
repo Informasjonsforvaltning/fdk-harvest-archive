@@ -5,7 +5,6 @@ import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry
 import io.mockk.mockk
 import io.mockk.verify
-import no.fdk.fdk_harvest_archive.kafka.KafkaDatasetEventCircuitBreaker
 import no.fdk.fdk_harvest_archive.kafka.KafkaManager
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Tag
@@ -28,10 +27,8 @@ class CircuitBreakerConsumerConfigurationTest {
             .build()
 
         val registry = CircuitBreakerRegistry.of(cbConfig)
-        val cb = registry.circuitBreaker(KafkaDatasetEventCircuitBreaker.CIRCUIT_BREAKER_ID)
-
-        // registers the onStateTransition listener in init { ... }
-        CircuitBreakerConsumerConfiguration(registry, kafkaManager)
+        HarvestCircuitBreakerConfig(kafkaManager).registerListeners(registry)
+        val cb = registry.circuitBreaker(HarvestCircuitBreakerConfig.DATASET_CIRCUIT_BREAKER_ID)
 
         repeat(2) {
             try {
@@ -50,9 +47,8 @@ class CircuitBreakerConsumerConfigurationTest {
         val kafkaManager = mockk<KafkaManager>(relaxed = true)
 
         val registry = CircuitBreakerRegistry.ofDefaults()
-        val cb = registry.circuitBreaker(KafkaDatasetEventCircuitBreaker.CIRCUIT_BREAKER_ID)
-
-        CircuitBreakerConsumerConfiguration(registry, kafkaManager)
+        HarvestCircuitBreakerConfig(kafkaManager).registerListeners(registry)
+        val cb = registry.circuitBreaker(HarvestCircuitBreakerConfig.DATASET_CIRCUIT_BREAKER_ID)
 
         cb.transitionToOpenState()
         cb.transitionToHalfOpenState()
@@ -60,5 +56,27 @@ class CircuitBreakerConsumerConfigurationTest {
 
         // OPEN->HALF_OPEN triggers resume, HALF_OPEN->CLOSED triggers resume
         verify(atLeast = 1) { kafkaManager.resume("dataset-archive") }
+    }
+
+    @Test
+    fun `bean methods create circuit breakers from registry`() {
+        val kafkaManager = mockk<KafkaManager>(relaxed = true)
+
+        val config = HarvestCircuitBreakerConfig(kafkaManager)
+        val registry = config.circuitBreakerRegistry()
+
+        val datasetCb = config.datasetArchiveCircuitBreaker(registry)
+        val conceptCb = config.conceptArchiveCircuitBreaker(registry)
+        val dataServiceCb = config.dataServiceArchiveCircuitBreaker(registry)
+        val informationModelCb = config.informationModelArchiveCircuitBreaker(registry)
+        val eventCb = config.eventArchiveCircuitBreaker(registry)
+        val serviceCb = config.serviceArchiveCircuitBreaker(registry)
+
+        assertEquals(CircuitBreaker.State.CLOSED, datasetCb.state)
+        assertEquals(CircuitBreaker.State.CLOSED, conceptCb.state)
+        assertEquals(CircuitBreaker.State.CLOSED, dataServiceCb.state)
+        assertEquals(CircuitBreaker.State.CLOSED, informationModelCb.state)
+        assertEquals(CircuitBreaker.State.CLOSED, eventCb.state)
+        assertEquals(CircuitBreaker.State.CLOSED, serviceCb.state)
     }
 }

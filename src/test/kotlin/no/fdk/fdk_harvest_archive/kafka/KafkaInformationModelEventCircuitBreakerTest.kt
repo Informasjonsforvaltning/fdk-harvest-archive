@@ -1,5 +1,6 @@
 package no.fdk.fdk_harvest_archive.kafka
 
+import io.github.resilience4j.circuitbreaker.CircuitBreaker
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -15,7 +16,8 @@ class KafkaInformationModelEventCircuitBreakerTest {
 
     private val eventArchiveService = mockk<EventArchiveService>(relaxed = true)
     private val genericProcessor = mockk<KafkaGenericProcessor>(relaxed = true)
-    private val circuitBreaker = KafkaInformationModelEventCircuitBreaker(eventArchiveService, genericProcessor)
+    private val circuitBreakerRegistration: CircuitBreaker = CircuitBreaker.ofDefaults("test-informationmodel-cb")
+    private val circuitBreaker = KafkaInformationModelEventCircuitBreaker(eventArchiveService, genericProcessor, circuitBreakerRegistration)
 
     private fun recordFor(event: InformationModelEvent): org.apache.kafka.clients.consumer.ConsumerRecord<String, Any> =
         org.apache.kafka.clients.consumer.ConsumerRecord("information-model-events", 0, 0L, "key", event as Any)
