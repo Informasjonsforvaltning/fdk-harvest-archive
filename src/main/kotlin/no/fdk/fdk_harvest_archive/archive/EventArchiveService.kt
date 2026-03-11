@@ -176,7 +176,7 @@ class EventArchiveService(
             .forEach { createZipIfLargerThanThreshold(it) }
     }
 
-    private fun createZipIfLargerThanThreshold(dirPath: Path, thresholdBytes: Long = zipThresholdBytes) {
+    private fun createZipIfLargerThanThreshold(dirPath: Path, thresholdBytes: Long = zipThresholdBytes, maxFileCount: Int = ZIP_MAX_FILE_COUNT) {
         val totalSize = Files.walk(dirPath)
             .filter { Files.isRegularFile(it) }
             .mapToLong { Files.size(it) }
@@ -191,6 +191,7 @@ class EventArchiveService(
         val filesToArchive = Files.walk(dirPath)
             .filter { Files.isRegularFile(it) }
             .toList()
+            .take(maxFileCount)
 
         if (filesToArchive.isEmpty()) return
 
@@ -220,5 +221,6 @@ class EventArchiveService(
     companion object {
         private val LOGGER: Logger = LoggerFactory.getLogger(EventArchiveService::class.java)
         private const val ZIP_THRESHOLD_BYTES: Long = 10L * 1024 * 1024 * 1024 // 10 GiB
+        private const val ZIP_MAX_FILE_COUNT: Int = 20000 // 20 000 files
     }
 }

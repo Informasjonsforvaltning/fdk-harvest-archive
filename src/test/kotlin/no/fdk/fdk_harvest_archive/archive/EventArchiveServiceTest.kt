@@ -378,11 +378,12 @@ class EventArchiveServiceTest {
         // Invoke the private createZipIfLargerThanThreshold with a very small threshold so it triggers in the test
         val method = EventArchiveService::class.java.getDeclaredMethod(
             "createZipIfLargerThanThreshold",
-            java.nio.file.Path::class.java,
+            Path::class.java,
             Long::class.javaPrimitiveType,
+            Int::class.javaPrimitiveType,
         )
         method.isAccessible = true
-        method.invoke(service, datasetPath, 1L)
+        method.invoke(service, datasetPath, 1L, 1)
 
         val zipFiles = Files.list(tempDir)
             .filter { it.fileName.toString().endsWith(".zip") }
