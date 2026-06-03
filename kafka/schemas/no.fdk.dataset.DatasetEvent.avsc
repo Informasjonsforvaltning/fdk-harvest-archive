@@ -32,6 +32,11 @@
     {
       "name": "timestamp",
       "type": "long"
+    },
+    {
+      "name": "catalogGraph",
+      "type": ["null", "string"],
+      "default": null
     }
   ]
 }
