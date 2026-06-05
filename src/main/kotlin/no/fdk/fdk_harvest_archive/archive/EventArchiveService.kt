@@ -82,6 +82,7 @@ class EventArchiveService(
             "uri" to event.uri?.toString(),
             "fdkId" to event.fdkId.toString(),
             "graph" to event.graph.toString(),
+            "catalogGraph" to event.catalogGraph?.toString(),
             "timestamp" to event.timestamp,
         )
         saveAsFile(datasetDir, filename, payload)
@@ -96,6 +97,7 @@ class EventArchiveService(
             "uri" to event.uri?.toString(),
             "fdkId" to event.fdkId.toString(),
             "graph" to event.graph.toString(),
+            "catalogGraph" to event.catalogGraph?.toString(),
             "timestamp" to event.timestamp,
         )
         saveAsFile(conceptDir, filename, payload)
@@ -110,6 +112,7 @@ class EventArchiveService(
             "uri" to event.uri?.toString(),
             "fdkId" to event.fdkId.toString(),
             "graph" to event.graph.toString(),
+            "catalogGraph" to event.catalogGraph?.toString(),
             "timestamp" to event.timestamp,
         )
         saveAsFile(dataServiceDir, filename, payload)
@@ -124,6 +127,7 @@ class EventArchiveService(
             "uri" to event.uri?.toString(),
             "fdkId" to event.fdkId.toString(),
             "graph" to event.graph.toString(),
+            "catalogGraph" to event.catalogGraph?.toString(),
             "timestamp" to event.timestamp,
         )
         saveAsFile(informationModelDir, filename, payload)
@@ -138,6 +142,7 @@ class EventArchiveService(
             "uri" to event.uri?.toString(),
             "fdkId" to event.fdkId.toString(),
             "graph" to event.graph.toString(),
+            "catalogGraph" to event.catalogGraph?.toString(),
             "timestamp" to event.timestamp,
         )
         saveAsFile(eventDir, filename, payload)
@@ -152,6 +157,7 @@ class EventArchiveService(
             "uri" to event.uri?.toString(),
             "fdkId" to event.fdkId.toString(),
             "graph" to event.graph.toString(),
+            "catalogGraph" to event.catalogGraph?.toString(),
             "timestamp" to event.timestamp,
         )
         saveAsFile(serviceDir, filename, payload)
