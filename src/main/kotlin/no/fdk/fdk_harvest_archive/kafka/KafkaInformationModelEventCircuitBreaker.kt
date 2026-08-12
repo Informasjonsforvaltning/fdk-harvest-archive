@@ -22,13 +22,14 @@ open class KafkaInformationModelEventCircuitBreaker(
     @param:Qualifier("informationModelArchiveCircuitBreaker")
     private val circuitBreaker: CircuitBreaker,
 ) : KafkaCircuitBreakerApi {
-
     override fun process(record: ConsumerRecord<String, Any>) {
         circuitBreaker.executeRunnable {
             try {
                 when (val value = record.value()) {
                     is InformationModelEvent -> {
-                        if (value.type != InformationModelEventType.INFORMATION_MODEL_HARVESTED && value.type != InformationModelEventType.INFORMATION_MODEL_REMOVED) {
+                        if (value.type != InformationModelEventType.INFORMATION_MODEL_HARVESTED &&
+                            value.type != InformationModelEventType.INFORMATION_MODEL_REMOVED
+                        ) {
                             LOGGER.debug("Skipping information model event with type {}.", value.type)
                             return@executeRunnable
                         }
@@ -36,13 +37,17 @@ open class KafkaInformationModelEventCircuitBreaker(
                         eventArchiveService.saveInformationModel(value)
                     }
 
-                    is GenericRecord -> genericProcessor.process(value, TOPIC)
+                    is GenericRecord -> {
+                        genericProcessor.process(value, TOPIC)
+                    }
 
-                    else -> LOGGER.warn(
-                        "Skipping unsupported information model record value type {} on topic {}",
-                        value?.javaClass?.name,
-                        record.topic()
-                    )
+                    else -> {
+                        LOGGER.warn(
+                            "Skipping unsupported information model record value type {} on topic {}",
+                            value?.javaClass?.name,
+                            record.topic(),
+                        )
+                    }
                 }
             } catch (e: Exception) {
                 LOGGER.error("Error processing information model event", e)

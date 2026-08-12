@@ -12,7 +12,6 @@ import org.junit.jupiter.api.Test
 
 @Tag("unit")
 class KafkaGenericProcessorTest {
-
     private val eventArchiveService = mockk<EventArchiveService>(relaxed = true)
     private val processor = KafkaGenericProcessor(eventArchiveService)
 
@@ -81,9 +80,10 @@ class KafkaGenericProcessorTest {
 
         every { eventArchiveService.saveGenericForTopic(any(), any()) } throws RuntimeException("write failed")
 
-        val thrown = assertThrows(RuntimeException::class.java) {
-            processor.process(genericRecord, "dataset-events")
-        }
+        val thrown =
+            assertThrows(RuntimeException::class.java) {
+                processor.process(genericRecord, "dataset-events")
+            }
         assertEquals("write failed", thrown.message)
 
         verify(exactly = 1) { eventArchiveService.saveGenericForTopic("dataset-events", any()) }

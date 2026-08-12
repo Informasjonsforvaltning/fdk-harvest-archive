@@ -1,10 +1,10 @@
 package no.fdk.fdk_harvest_archive.config
 
 import io.github.resilience4j.circuitbreaker.CircuitBreaker
+import io.github.resilience4j.circuitbreaker.CircuitBreaker.StateTransition
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry
 import io.github.resilience4j.circuitbreaker.event.CircuitBreakerOnStateTransitionEvent
-import io.github.resilience4j.circuitbreaker.CircuitBreaker.StateTransition
 import no.fdk.fdk_harvest_archive.kafka.KafkaConceptEventCircuitBreaker
 import no.fdk.fdk_harvest_archive.kafka.KafkaConceptEventConsumer
 import no.fdk.fdk_harvest_archive.kafka.KafkaDataServiceEventCircuitBreaker
@@ -27,11 +27,11 @@ import java.time.Duration
 open class HarvestCircuitBreakerConfig(
     private val kafkaManager: KafkaManager,
 ) {
-
     @Bean
     open fun circuitBreakerRegistry(): CircuitBreakerRegistry {
         val defaultConfig =
-            CircuitBreakerConfig.custom()
+            CircuitBreakerConfig
+                .custom()
                 .slidingWindowType(CircuitBreakerConfig.SlidingWindowType.COUNT_BASED)
                 .slidingWindowSize(10)
                 .minimumNumberOfCalls(5)
@@ -83,7 +83,8 @@ open class HarvestCircuitBreakerConfig(
         breakerId: String,
         listenerId: String,
     ) {
-        registry.circuitBreaker(breakerId)
+        registry
+            .circuitBreaker(breakerId)
             .eventPublisher
             .onStateTransition { event: CircuitBreakerOnStateTransitionEvent ->
                 handleStateTransition(event, listenerId)
@@ -113,7 +114,9 @@ open class HarvestCircuitBreakerConfig(
                 kafkaManager.resume(listenerId)
             }
 
-            else -> throw IllegalStateException("Unknown transition state: " + event.stateTransition)
+            else -> {
+                throw IllegalStateException("Unknown transition state: " + event.stateTransition)
+            }
         }
     }
 

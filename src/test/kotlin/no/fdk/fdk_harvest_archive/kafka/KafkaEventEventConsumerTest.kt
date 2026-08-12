@@ -15,7 +15,6 @@ import java.time.Duration
 
 @Tag("unit")
 class KafkaEventEventConsumerTest {
-
     private val circuitBreaker: KafkaEventEventCircuitBreaker = mockk()
     private val consumer = KafkaEventEventConsumer(circuitBreaker)
     private val ack: Acknowledgment = mockk(relaxed = true)
@@ -43,14 +42,16 @@ class KafkaEventEventConsumerTest {
 
     @Test
     fun `consumeEventEvent processes EVENT_HARVESTED and acknowledges on success`() {
-        val event = EventEvent.newBuilder()
-            .setType(EventEventType.EVENT_HARVESTED)
-            .setHarvestRunId("12")
-            .setUri("https://event.test")
-            .setFdkId("test-event-123")
-            .setGraph("<http://example.org/event/123> a <http://schema.org/Event> .")
-            .setTimestamp(123)
-            .build()
+        val event =
+            EventEvent
+                .newBuilder()
+                .setType(EventEventType.EVENT_HARVESTED)
+                .setHarvestRunId("12")
+                .setUri("https://event.test")
+                .setFdkId("test-event-123")
+                .setGraph("<http://example.org/event/123> a <http://schema.org/Event> .")
+                .setTimestamp(123)
+                .build()
         val record: ConsumerRecord<String, Any> = ConsumerRecord("event-events", 0, 0L, "key", event as Any)
 
         every { circuitBreaker.process(any()) } returns Unit
@@ -64,14 +65,16 @@ class KafkaEventEventConsumerTest {
 
     @Test
     fun `consumeEventEvent processes EVENT_REMOVED and acknowledges on success`() {
-        val event = EventEvent.newBuilder()
-            .setType(EventEventType.EVENT_REMOVED)
-            .setHarvestRunId("12")
-            .setUri("https://event.test")
-            .setFdkId("test-event-123")
-            .setGraph("")
-            .setTimestamp(123)
-            .build()
+        val event =
+            EventEvent
+                .newBuilder()
+                .setType(EventEventType.EVENT_REMOVED)
+                .setHarvestRunId("12")
+                .setUri("https://event.test")
+                .setFdkId("test-event-123")
+                .setGraph("")
+                .setTimestamp(123)
+                .build()
         val record: ConsumerRecord<String, Any> = ConsumerRecord("event-events", 0, 0L, "key", event as Any)
 
         every { circuitBreaker.process(any()) } returns Unit
@@ -85,14 +88,16 @@ class KafkaEventEventConsumerTest {
 
     @Test
     fun `consumeEventEvent nacks on processing error`() {
-        val event = EventEvent.newBuilder()
-            .setType(EventEventType.EVENT_HARVESTED)
-            .setHarvestRunId("12")
-            .setUri("https://event.test")
-            .setFdkId("test-event-123")
-            .setGraph("<http://example.org/event/123> a <http://schema.org/Event> .")
-            .setTimestamp(123)
-            .build()
+        val event =
+            EventEvent
+                .newBuilder()
+                .setType(EventEventType.EVENT_HARVESTED)
+                .setHarvestRunId("12")
+                .setUri("https://event.test")
+                .setFdkId("test-event-123")
+                .setGraph("<http://example.org/event/123> a <http://schema.org/Event> .")
+                .setTimestamp(123)
+                .build()
         val record: ConsumerRecord<String, Any> = ConsumerRecord("event-events", 0, 0L, "key", event as Any)
 
         every { circuitBreaker.process(any()) } throws RuntimeException("boom")

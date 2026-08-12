@@ -14,7 +14,7 @@
     <parent>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-parent</artifactId>
-      <version>4.0.3</version>
+      <version>4.1.0</version>
       <relativePath/>
     </parent>
 
@@ -33,6 +33,7 @@
         <testcontainers.version>2.0.3</testcontainers.version>
         <avro.version>1.12.1</avro.version>
         <confluent.version>8.1.1</confluent.version>
+        <ktlint.version>3.7.1</ktlint.version>
     </properties>
 
     <repositories>
@@ -281,10 +282,47 @@
                 </executions>
             </plugin>
 
+            <!-- ktlint derives its source roots from the project's compile source roots,
+                 which only contain src/main/java. Registering the Kotlin sources here is
+                 what makes ktlint actually see them. -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.6.1</version>
+                <executions>
+                    <execution>
+                        <id>add-kotlin-sources</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${project.basedir}/src/main/kotlin</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>add-kotlin-test-sources</id>
+                        <!-- generate-sources, not generate-test-sources: ktlint's format goal
+                             runs at process-sources and must already see the test sources. -->
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-test-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${project.basedir}/src/test/kotlin</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
             <plugin>
                 <groupId>com.github.gantsign.maven</groupId>
                 <artifactId>ktlint-maven-plugin</artifactId>
-                <version>3.5.0</version>
+                <version>${ktlint.version}</version>
                 <executions>
                     <execution>
                         <id>format-and-check</id>

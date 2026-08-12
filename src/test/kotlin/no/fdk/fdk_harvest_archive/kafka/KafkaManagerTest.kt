@@ -10,7 +10,6 @@ import org.springframework.kafka.listener.MessageListenerContainer
 
 @Tag("unit")
 class KafkaManagerTest {
-
     @Test
     fun `pause and resume only targets matching listener id`() {
         val c1 = mockk<MessageListenerContainer>(relaxed = true)

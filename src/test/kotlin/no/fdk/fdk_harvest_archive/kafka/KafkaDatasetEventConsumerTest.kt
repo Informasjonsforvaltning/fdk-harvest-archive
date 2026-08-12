@@ -15,7 +15,6 @@ import java.time.Duration
 
 @Tag("unit")
 class KafkaDatasetEventConsumerTest {
-
     private val circuitBreaker: KafkaDatasetEventCircuitBreaker = mockk()
     private val consumer = KafkaDatasetEventConsumer(circuitBreaker)
     private val ack: Acknowledgment = mockk(relaxed = true)
@@ -43,14 +42,16 @@ class KafkaDatasetEventConsumerTest {
 
     @Test
     fun `consumeDatasetEvent processes DATASET_HARVESTED and acknowledges on success`() {
-        val event = DatasetEvent.newBuilder()
-            .setType(DatasetEventType.DATASET_HARVESTED)
-            .setHarvestRunId("12")
-            .setUri("https://dataset.test")
-            .setFdkId("test-dataset-123")
-            .setGraph("<http://example.org/dataset/123> a <http://www.w3.org/ns/dcat#Dataset> .")
-            .setTimestamp(123)
-            .build()
+        val event =
+            DatasetEvent
+                .newBuilder()
+                .setType(DatasetEventType.DATASET_HARVESTED)
+                .setHarvestRunId("12")
+                .setUri("https://dataset.test")
+                .setFdkId("test-dataset-123")
+                .setGraph("<http://example.org/dataset/123> a <http://www.w3.org/ns/dcat#Dataset> .")
+                .setTimestamp(123)
+                .build()
         val record: ConsumerRecord<String, Any> = ConsumerRecord("dataset-events", 0, 0L, "key", event as Any)
 
         every { circuitBreaker.process(any()) } returns Unit
@@ -64,14 +65,16 @@ class KafkaDatasetEventConsumerTest {
 
     @Test
     fun `consumeDatasetEvent processes DATASET_REMOVED and acknowledges on success`() {
-        val event = DatasetEvent.newBuilder()
-            .setType(DatasetEventType.DATASET_REMOVED)
-            .setHarvestRunId("12")
-            .setUri("https://dataset.test")
-            .setFdkId("test-dataset-123")
-            .setGraph("")
-            .setTimestamp(123)
-            .build()
+        val event =
+            DatasetEvent
+                .newBuilder()
+                .setType(DatasetEventType.DATASET_REMOVED)
+                .setHarvestRunId("12")
+                .setUri("https://dataset.test")
+                .setFdkId("test-dataset-123")
+                .setGraph("")
+                .setTimestamp(123)
+                .build()
         val record: ConsumerRecord<String, Any> = ConsumerRecord("dataset-events", 0, 0L, "key", event as Any)
 
         every { circuitBreaker.process(any()) } returns Unit
@@ -85,14 +88,16 @@ class KafkaDatasetEventConsumerTest {
 
     @Test
     fun `consumeDatasetEvent nacks on processing error`() {
-        val event = DatasetEvent.newBuilder()
-            .setType(DatasetEventType.DATASET_HARVESTED)
-            .setHarvestRunId("12")
-            .setUri("https://dataset.test")
-            .setFdkId("test-dataset-123")
-            .setGraph("<http://example.org/dataset/123> a <http://www.w3.org/ns/dcat#Dataset> .")
-            .setTimestamp(123)
-            .build()
+        val event =
+            DatasetEvent
+                .newBuilder()
+                .setType(DatasetEventType.DATASET_HARVESTED)
+                .setHarvestRunId("12")
+                .setUri("https://dataset.test")
+                .setFdkId("test-dataset-123")
+                .setGraph("<http://example.org/dataset/123> a <http://www.w3.org/ns/dcat#Dataset> .")
+                .setTimestamp(123)
+                .build()
         val record: ConsumerRecord<String, Any> = ConsumerRecord("dataset-events", 0, 0L, "key", event as Any)
 
         every { circuitBreaker.process(any()) } throws RuntimeException("boom")

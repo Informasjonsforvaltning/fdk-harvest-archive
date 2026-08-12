@@ -15,7 +15,6 @@ import java.time.Duration
 
 @Tag("unit")
 class KafkaServiceEventConsumerTest {
-
     private val circuitBreaker: KafkaServiceEventCircuitBreaker = mockk()
     private val consumer = KafkaServiceEventConsumer(circuitBreaker)
     private val ack: Acknowledgment = mockk(relaxed = true)
@@ -43,14 +42,16 @@ class KafkaServiceEventConsumerTest {
 
     @Test
     fun `consumeServiceEvent processes SERVICE_HARVESTED and acknowledges on success`() {
-        val event = ServiceEvent.newBuilder()
-            .setType(ServiceEventType.SERVICE_HARVESTED)
-            .setHarvestRunId("12")
-            .setUri("https://service.test")
-            .setFdkId("test-service-123")
-            .setGraph("<http://example.org/service/123> a <http://www.w3.org/ns/dcat#DataService> .")
-            .setTimestamp(123)
-            .build()
+        val event =
+            ServiceEvent
+                .newBuilder()
+                .setType(ServiceEventType.SERVICE_HARVESTED)
+                .setHarvestRunId("12")
+                .setUri("https://service.test")
+                .setFdkId("test-service-123")
+                .setGraph("<http://example.org/service/123> a <http://www.w3.org/ns/dcat#DataService> .")
+                .setTimestamp(123)
+                .build()
         val record: ConsumerRecord<String, Any> = ConsumerRecord("service-events", 0, 0L, "key", event as Any)
 
         every { circuitBreaker.process(any()) } returns Unit
@@ -64,14 +65,16 @@ class KafkaServiceEventConsumerTest {
 
     @Test
     fun `consumeServiceEvent processes SERVICE_REMOVED and acknowledges on success`() {
-        val event = ServiceEvent.newBuilder()
-            .setType(ServiceEventType.SERVICE_REMOVED)
-            .setHarvestRunId("12")
-            .setUri("https://service.test")
-            .setFdkId("test-service-123")
-            .setGraph("")
-            .setTimestamp(123)
-            .build()
+        val event =
+            ServiceEvent
+                .newBuilder()
+                .setType(ServiceEventType.SERVICE_REMOVED)
+                .setHarvestRunId("12")
+                .setUri("https://service.test")
+                .setFdkId("test-service-123")
+                .setGraph("")
+                .setTimestamp(123)
+                .build()
         val record: ConsumerRecord<String, Any> = ConsumerRecord("service-events", 0, 0L, "key", event as Any)
 
         every { circuitBreaker.process(any()) } returns Unit
@@ -85,14 +88,16 @@ class KafkaServiceEventConsumerTest {
 
     @Test
     fun `consumeServiceEvent nacks on processing error`() {
-        val event = ServiceEvent.newBuilder()
-            .setType(ServiceEventType.SERVICE_HARVESTED)
-            .setHarvestRunId("12")
-            .setUri("https://service.test")
-            .setFdkId("test-service-123")
-            .setGraph("<http://example.org/service/123> a <http://www.w3.org/ns/dcat#DataService> .")
-            .setTimestamp(123)
-            .build()
+        val event =
+            ServiceEvent
+                .newBuilder()
+                .setType(ServiceEventType.SERVICE_HARVESTED)
+                .setHarvestRunId("12")
+                .setUri("https://service.test")
+                .setFdkId("test-service-123")
+                .setGraph("<http://example.org/service/123> a <http://www.w3.org/ns/dcat#DataService> .")
+                .setTimestamp(123)
+                .build()
         val record: ConsumerRecord<String, Any> = ConsumerRecord("service-events", 0, 0L, "key", event as Any)
 
         every { circuitBreaker.process(any()) } throws RuntimeException("boom")

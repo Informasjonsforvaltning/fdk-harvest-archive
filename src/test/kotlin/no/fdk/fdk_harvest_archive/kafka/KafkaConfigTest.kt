@@ -7,13 +7,13 @@ import org.springframework.kafka.listener.ContainerProperties
 
 @Tag("unit")
 class KafkaConfigTest {
-
     @Test
     fun `listener container factory uses MANUAL ack mode so Acknowledgment is available to listeners`() {
-        val config = KafkaConfig(
-            bootstrapServers = "localhost:9092",
-            schemaRegistryUrl = "http://localhost:8081",
-        )
+        val config =
+            KafkaConfig(
+                bootstrapServers = "localhost:9092",
+                schemaRegistryUrl = "http://localhost:8081",
+            )
         val factory = config.kafkaListenerContainerFactory()
 
         assertThat(factory.containerProperties.ackMode)

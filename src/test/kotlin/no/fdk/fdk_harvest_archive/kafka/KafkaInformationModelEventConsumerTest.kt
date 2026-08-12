@@ -15,7 +15,6 @@ import java.time.Duration
 
 @Tag("unit")
 class KafkaInformationModelEventConsumerTest {
-
     private val circuitBreaker: KafkaInformationModelEventCircuitBreaker = mockk()
     private val consumer = KafkaInformationModelEventConsumer(circuitBreaker)
     private val ack: Acknowledgment = mockk(relaxed = true)
@@ -43,14 +42,16 @@ class KafkaInformationModelEventConsumerTest {
 
     @Test
     fun `consumeInformationModelEvent processes INFORMATION_MODEL_HARVESTED and acknowledges on success`() {
-        val event = InformationModelEvent.newBuilder()
-            .setType(InformationModelEventType.INFORMATION_MODEL_HARVESTED)
-            .setHarvestRunId("12")
-            .setUri("https://informationmodel.test")
-            .setFdkId("test-informationmodel-123")
-            .setGraph("<http://example.org/informationmodel/123> a <http://www.w3.org/ns/dcat#Dataset> .")
-            .setTimestamp(123)
-            .build()
+        val event =
+            InformationModelEvent
+                .newBuilder()
+                .setType(InformationModelEventType.INFORMATION_MODEL_HARVESTED)
+                .setHarvestRunId("12")
+                .setUri("https://informationmodel.test")
+                .setFdkId("test-informationmodel-123")
+                .setGraph("<http://example.org/informationmodel/123> a <http://www.w3.org/ns/dcat#Dataset> .")
+                .setTimestamp(123)
+                .build()
         val record: ConsumerRecord<String, Any> = ConsumerRecord("information-model-events", 0, 0L, "key", event as Any)
 
         every { circuitBreaker.process(any()) } returns Unit
@@ -64,14 +65,16 @@ class KafkaInformationModelEventConsumerTest {
 
     @Test
     fun `consumeInformationModelEvent processes INFORMATION_MODEL_REMOVED and acknowledges on success`() {
-        val event = InformationModelEvent.newBuilder()
-            .setType(InformationModelEventType.INFORMATION_MODEL_REMOVED)
-            .setHarvestRunId("12")
-            .setUri("https://informationmodel.test")
-            .setFdkId("test-informationmodel-123")
-            .setGraph("")
-            .setTimestamp(123)
-            .build()
+        val event =
+            InformationModelEvent
+                .newBuilder()
+                .setType(InformationModelEventType.INFORMATION_MODEL_REMOVED)
+                .setHarvestRunId("12")
+                .setUri("https://informationmodel.test")
+                .setFdkId("test-informationmodel-123")
+                .setGraph("")
+                .setTimestamp(123)
+                .build()
         val record: ConsumerRecord<String, Any> = ConsumerRecord("information-model-events", 0, 0L, "key", event as Any)
 
         every { circuitBreaker.process(any()) } returns Unit
@@ -85,14 +88,16 @@ class KafkaInformationModelEventConsumerTest {
 
     @Test
     fun `consumeInformationModelEvent nacks on processing error`() {
-        val event = InformationModelEvent.newBuilder()
-            .setType(InformationModelEventType.INFORMATION_MODEL_HARVESTED)
-            .setHarvestRunId("12")
-            .setUri("https://informationmodel.test")
-            .setFdkId("test-informationmodel-123")
-            .setGraph("<http://example.org/informationmodel/123> a <http://www.w3.org/ns/dcat#Dataset> .")
-            .setTimestamp(123)
-            .build()
+        val event =
+            InformationModelEvent
+                .newBuilder()
+                .setType(InformationModelEventType.INFORMATION_MODEL_HARVESTED)
+                .setHarvestRunId("12")
+                .setUri("https://informationmodel.test")
+                .setFdkId("test-informationmodel-123")
+                .setGraph("<http://example.org/informationmodel/123> a <http://www.w3.org/ns/dcat#Dataset> .")
+                .setTimestamp(123)
+                .build()
         val record: ConsumerRecord<String, Any> = ConsumerRecord("information-model-events", 0, 0L, "key", event as Any)
 
         every { circuitBreaker.process(any()) } throws RuntimeException("boom")

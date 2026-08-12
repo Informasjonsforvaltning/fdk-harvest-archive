@@ -3,10 +3,10 @@ package no.fdk.fdk_harvest_archive.archive
 import com.fasterxml.jackson.module.kotlin.readValue
 import no.fdk.concept.ConceptEvent
 import no.fdk.concept.ConceptEventType
-import no.fdk.dataset.DatasetEvent
-import no.fdk.dataset.DatasetEventType
 import no.fdk.dataservice.DataServiceEvent
 import no.fdk.dataservice.DataServiceEventType
+import no.fdk.dataset.DatasetEvent
+import no.fdk.dataset.DatasetEventType
 import no.fdk.event.EventEvent
 import no.fdk.event.EventEventType
 import no.fdk.informationmodel.InformationModelEvent
@@ -22,25 +22,29 @@ import java.nio.file.Path
 
 @Tag("unit")
 class EventArchiveServiceTest {
-
     @Test
-    fun `saveDataset creates directory and writes JSON file`(@TempDir tempDir: Path) {
-        val service = EventArchiveService(
-            datasetDir = tempDir.resolve("datasets").toString(),
-            conceptDir = tempDir.resolve("concepts").toString(),
-            dataServiceDir = tempDir.resolve("data_services").toString(),
-            informationModelDir = tempDir.resolve("information_models").toString(),
-            eventDir = tempDir.resolve("events").toString(),
-            serviceDir = tempDir.resolve("services").toString(),
-        )
-        val event = DatasetEvent.newBuilder()
-            .setType(DatasetEventType.DATASET_HARVESTED)
-            .setHarvestRunId("run-1")
-            .setUri("https://example.com/dataset/1")
-            .setFdkId("test-dataset-123")
-            .setGraph("<http://example.org/dataset/123> a <http://www.w3.org/ns/dcat#Dataset> .")
-            .setTimestamp(1700000000000L)
-            .build()
+    fun `saveDataset creates directory and writes JSON file`(
+        @TempDir tempDir: Path,
+    ) {
+        val service =
+            EventArchiveService(
+                datasetDir = tempDir.resolve("datasets").toString(),
+                conceptDir = tempDir.resolve("concepts").toString(),
+                dataServiceDir = tempDir.resolve("data_services").toString(),
+                informationModelDir = tempDir.resolve("information_models").toString(),
+                eventDir = tempDir.resolve("events").toString(),
+                serviceDir = tempDir.resolve("services").toString(),
+            )
+        val event =
+            DatasetEvent
+                .newBuilder()
+                .setType(DatasetEventType.DATASET_HARVESTED)
+                .setHarvestRunId("run-1")
+                .setUri("https://example.com/dataset/1")
+                .setFdkId("test-dataset-123")
+                .setGraph("<http://example.org/dataset/123> a <http://www.w3.org/ns/dcat#Dataset> .")
+                .setTimestamp(1700000000000L)
+                .build()
 
         service.saveDataset(event)
 
@@ -56,22 +60,27 @@ class EventArchiveServiceTest {
     }
 
     @Test
-    fun `saveDataset creates subdirectory when path has multiple segments`(@TempDir tempDir: Path) {
+    fun `saveDataset creates subdirectory when path has multiple segments`(
+        @TempDir tempDir: Path,
+    ) {
         val datasetDir = tempDir.resolve("datasets").toString()
-        val service = EventArchiveService(
-            datasetDir = datasetDir,
-            conceptDir = tempDir.resolve("concepts").toString(),
-            dataServiceDir = tempDir.resolve("data_services").toString(),
-            informationModelDir = tempDir.resolve("information_models").toString(),
-            eventDir = tempDir.resolve("events").toString(),
-            serviceDir = tempDir.resolve("services").toString(),
-        )
-        val event = DatasetEvent.newBuilder()
-            .setType(DatasetEventType.DATASET_REMOVED)
-            .setFdkId("my-id")
-            .setGraph("")
-            .setTimestamp(1L)
-            .build()
+        val service =
+            EventArchiveService(
+                datasetDir = datasetDir,
+                conceptDir = tempDir.resolve("concepts").toString(),
+                dataServiceDir = tempDir.resolve("data_services").toString(),
+                informationModelDir = tempDir.resolve("information_models").toString(),
+                eventDir = tempDir.resolve("events").toString(),
+                serviceDir = tempDir.resolve("services").toString(),
+            )
+        val event =
+            DatasetEvent
+                .newBuilder()
+                .setType(DatasetEventType.DATASET_REMOVED)
+                .setFdkId("my-id")
+                .setGraph("")
+                .setTimestamp(1L)
+                .build()
 
         service.saveDataset(event)
 
@@ -81,22 +90,29 @@ class EventArchiveServiceTest {
     }
 
     @Test
-    fun `saveDataset writes valid JSON that can be read back`(@TempDir tempDir: Path) {
-        val service = EventArchiveService(
-            datasetDir = tempDir.resolve("datasets").toString(),
-            conceptDir = tempDir.resolve("concepts").toString(),
-            dataServiceDir = tempDir.resolve("data_services").toString(),
-            informationModelDir = tempDir.resolve("information_models").toString(),
-            eventDir = tempDir.resolve("events").toString(),
-            serviceDir = tempDir.resolve("services").toString(),
-        )
-        val objectMapper = com.fasterxml.jackson.module.kotlin.jacksonObjectMapper()
-        val event = DatasetEvent.newBuilder()
-            .setType(DatasetEventType.DATASET_HARVESTED)
-            .setFdkId("json-roundtrip")
-            .setGraph("<> a <http://example.org/Dataset> .")
-            .setTimestamp(42L)
-            .build()
+    fun `saveDataset writes valid JSON that can be read back`(
+        @TempDir tempDir: Path,
+    ) {
+        val service =
+            EventArchiveService(
+                datasetDir = tempDir.resolve("datasets").toString(),
+                conceptDir = tempDir.resolve("concepts").toString(),
+                dataServiceDir = tempDir.resolve("data_services").toString(),
+                informationModelDir = tempDir.resolve("information_models").toString(),
+                eventDir = tempDir.resolve("events").toString(),
+                serviceDir = tempDir.resolve("services").toString(),
+            )
+        val objectMapper =
+            com.fasterxml.jackson.module.kotlin
+                .jacksonObjectMapper()
+        val event =
+            DatasetEvent
+                .newBuilder()
+                .setType(DatasetEventType.DATASET_HARVESTED)
+                .setFdkId("json-roundtrip")
+                .setGraph("<> a <http://example.org/Dataset> .")
+                .setTimestamp(42L)
+                .build()
 
         service.saveDataset(event)
 
@@ -108,24 +124,29 @@ class EventArchiveServiceTest {
     }
 
     @Test
-    fun `saveConcept writes concept event JSON to concept directory`(@TempDir tempDir: Path) {
+    fun `saveConcept writes concept event JSON to concept directory`(
+        @TempDir tempDir: Path,
+    ) {
         val conceptDir = tempDir.resolve("concepts").toString()
-        val service = EventArchiveService(
-            datasetDir = tempDir.resolve("datasets").toString(),
-            conceptDir = conceptDir,
-            dataServiceDir = tempDir.resolve("data_services").toString(),
-            informationModelDir = tempDir.resolve("information_models").toString(),
-            eventDir = tempDir.resolve("events").toString(),
-            serviceDir = tempDir.resolve("services").toString(),
-        )
-        val event = ConceptEvent.newBuilder()
-            .setType(ConceptEventType.CONCEPT_HARVESTED)
-            .setHarvestRunId("run-2")
-            .setUri("https://example.com/concept/1")
-            .setFdkId("concept-1")
-            .setGraph("<> a <http://example.org/Concept> .")
-            .setTimestamp(100L)
-            .build()
+        val service =
+            EventArchiveService(
+                datasetDir = tempDir.resolve("datasets").toString(),
+                conceptDir = conceptDir,
+                dataServiceDir = tempDir.resolve("data_services").toString(),
+                informationModelDir = tempDir.resolve("information_models").toString(),
+                eventDir = tempDir.resolve("events").toString(),
+                serviceDir = tempDir.resolve("services").toString(),
+            )
+        val event =
+            ConceptEvent
+                .newBuilder()
+                .setType(ConceptEventType.CONCEPT_HARVESTED)
+                .setHarvestRunId("run-2")
+                .setUri("https://example.com/concept/1")
+                .setFdkId("concept-1")
+                .setGraph("<> a <http://example.org/Concept> .")
+                .setTimestamp(100L)
+                .build()
 
         service.saveConcept(event)
 
@@ -136,24 +157,29 @@ class EventArchiveServiceTest {
     }
 
     @Test
-    fun `saveDataService writes data service event JSON to data service directory`(@TempDir tempDir: Path) {
+    fun `saveDataService writes data service event JSON to data service directory`(
+        @TempDir tempDir: Path,
+    ) {
         val dataServiceDir = tempDir.resolve("data_services").toString()
-        val service = EventArchiveService(
-            datasetDir = tempDir.resolve("datasets").toString(),
-            conceptDir = tempDir.resolve("concepts").toString(),
-            dataServiceDir = dataServiceDir,
-            informationModelDir = tempDir.resolve("information_models").toString(),
-            eventDir = tempDir.resolve("events").toString(),
-            serviceDir = tempDir.resolve("services").toString(),
-        )
-        val event = DataServiceEvent.newBuilder()
-            .setType(DataServiceEventType.DATA_SERVICE_HARVESTED)
-            .setHarvestRunId("run-ds")
-            .setUri("https://example.com/dataservice/1")
-            .setFdkId("dataservice-1")
-            .setGraph("<> a <http://www.w3.org/ns/dcat#DataService> .")
-            .setTimestamp(200L)
-            .build()
+        val service =
+            EventArchiveService(
+                datasetDir = tempDir.resolve("datasets").toString(),
+                conceptDir = tempDir.resolve("concepts").toString(),
+                dataServiceDir = dataServiceDir,
+                informationModelDir = tempDir.resolve("information_models").toString(),
+                eventDir = tempDir.resolve("events").toString(),
+                serviceDir = tempDir.resolve("services").toString(),
+            )
+        val event =
+            DataServiceEvent
+                .newBuilder()
+                .setType(DataServiceEventType.DATA_SERVICE_HARVESTED)
+                .setHarvestRunId("run-ds")
+                .setUri("https://example.com/dataservice/1")
+                .setFdkId("dataservice-1")
+                .setGraph("<> a <http://www.w3.org/ns/dcat#DataService> .")
+                .setTimestamp(200L)
+                .build()
 
         service.saveDataService(event)
 
@@ -164,24 +190,29 @@ class EventArchiveServiceTest {
     }
 
     @Test
-    fun `saveInformationModel writes information model event JSON to information model directory`(@TempDir tempDir: Path) {
+    fun `saveInformationModel writes information model event JSON to information model directory`(
+        @TempDir tempDir: Path,
+    ) {
         val informationModelDir = tempDir.resolve("information_models").toString()
-        val service = EventArchiveService(
-            datasetDir = tempDir.resolve("datasets").toString(),
-            conceptDir = tempDir.resolve("concepts").toString(),
-            dataServiceDir = tempDir.resolve("data_services").toString(),
-            informationModelDir = informationModelDir,
-            eventDir = tempDir.resolve("events").toString(),
-            serviceDir = tempDir.resolve("services").toString(),
-        )
-        val event = InformationModelEvent.newBuilder()
-            .setType(InformationModelEventType.INFORMATION_MODEL_HARVESTED)
-            .setHarvestRunId("run-im")
-            .setUri("https://example.com/informationmodel/1")
-            .setFdkId("informationmodel-1")
-            .setGraph("<> a <http://www.w3.org/ns/dcat#Dataset> .")
-            .setTimestamp(300L)
-            .build()
+        val service =
+            EventArchiveService(
+                datasetDir = tempDir.resolve("datasets").toString(),
+                conceptDir = tempDir.resolve("concepts").toString(),
+                dataServiceDir = tempDir.resolve("data_services").toString(),
+                informationModelDir = informationModelDir,
+                eventDir = tempDir.resolve("events").toString(),
+                serviceDir = tempDir.resolve("services").toString(),
+            )
+        val event =
+            InformationModelEvent
+                .newBuilder()
+                .setType(InformationModelEventType.INFORMATION_MODEL_HARVESTED)
+                .setHarvestRunId("run-im")
+                .setUri("https://example.com/informationmodel/1")
+                .setFdkId("informationmodel-1")
+                .setGraph("<> a <http://www.w3.org/ns/dcat#Dataset> .")
+                .setTimestamp(300L)
+                .build()
 
         service.saveInformationModel(event)
 
@@ -192,24 +223,29 @@ class EventArchiveServiceTest {
     }
 
     @Test
-    fun `saveEvent writes event event JSON to event directory`(@TempDir tempDir: Path) {
+    fun `saveEvent writes event event JSON to event directory`(
+        @TempDir tempDir: Path,
+    ) {
         val eventDir = tempDir.resolve("events").toString()
-        val service = EventArchiveService(
-            datasetDir = tempDir.resolve("datasets").toString(),
-            conceptDir = tempDir.resolve("concepts").toString(),
-            dataServiceDir = tempDir.resolve("data_services").toString(),
-            informationModelDir = tempDir.resolve("information_models").toString(),
-            eventDir = eventDir,
-            serviceDir = tempDir.resolve("services").toString(),
-        )
-        val event = EventEvent.newBuilder()
-            .setType(EventEventType.EVENT_HARVESTED)
-            .setHarvestRunId("run-ev")
-            .setUri("https://example.com/event/1")
-            .setFdkId("event-1")
-            .setGraph("<> a <http://schema.org/Event> .")
-            .setTimestamp(400L)
-            .build()
+        val service =
+            EventArchiveService(
+                datasetDir = tempDir.resolve("datasets").toString(),
+                conceptDir = tempDir.resolve("concepts").toString(),
+                dataServiceDir = tempDir.resolve("data_services").toString(),
+                informationModelDir = tempDir.resolve("information_models").toString(),
+                eventDir = eventDir,
+                serviceDir = tempDir.resolve("services").toString(),
+            )
+        val event =
+            EventEvent
+                .newBuilder()
+                .setType(EventEventType.EVENT_HARVESTED)
+                .setHarvestRunId("run-ev")
+                .setUri("https://example.com/event/1")
+                .setFdkId("event-1")
+                .setGraph("<> a <http://schema.org/Event> .")
+                .setTimestamp(400L)
+                .build()
 
         service.saveEvent(event)
 
@@ -220,24 +256,29 @@ class EventArchiveServiceTest {
     }
 
     @Test
-    fun `saveService writes service event JSON to service directory`(@TempDir tempDir: Path) {
+    fun `saveService writes service event JSON to service directory`(
+        @TempDir tempDir: Path,
+    ) {
         val serviceDir = tempDir.resolve("services").toString()
-        val service = EventArchiveService(
-            datasetDir = tempDir.resolve("datasets").toString(),
-            conceptDir = tempDir.resolve("concepts").toString(),
-            dataServiceDir = tempDir.resolve("data_services").toString(),
-            informationModelDir = tempDir.resolve("information_models").toString(),
-            eventDir = tempDir.resolve("events").toString(),
-            serviceDir = serviceDir,
-        )
-        val event = ServiceEvent.newBuilder()
-            .setType(ServiceEventType.SERVICE_HARVESTED)
-            .setHarvestRunId("run-svc")
-            .setUri("https://example.com/service/1")
-            .setFdkId("service-1")
-            .setGraph("<> a <http://www.w3.org/ns/dcat#DataService> .")
-            .setTimestamp(500L)
-            .build()
+        val service =
+            EventArchiveService(
+                datasetDir = tempDir.resolve("datasets").toString(),
+                conceptDir = tempDir.resolve("concepts").toString(),
+                dataServiceDir = tempDir.resolve("data_services").toString(),
+                informationModelDir = tempDir.resolve("information_models").toString(),
+                eventDir = tempDir.resolve("events").toString(),
+                serviceDir = serviceDir,
+            )
+        val event =
+            ServiceEvent
+                .newBuilder()
+                .setType(ServiceEventType.SERVICE_HARVESTED)
+                .setHarvestRunId("run-svc")
+                .setUri("https://example.com/service/1")
+                .setFdkId("service-1")
+                .setGraph("<> a <http://www.w3.org/ns/dcat#DataService> .")
+                .setTimestamp(500L)
+                .build()
 
         service.saveService(event)
 
@@ -248,24 +289,28 @@ class EventArchiveServiceTest {
     }
 
     @Test
-    fun `saveGenericForTopic writes JSON file when topic and type are allowed`(@TempDir tempDir: Path) {
+    fun `saveGenericForTopic writes JSON file when topic and type are allowed`(
+        @TempDir tempDir: Path,
+    ) {
         val datasetDir = tempDir.resolve("datasets").toString()
-        val service = EventArchiveService(
-            datasetDir = datasetDir,
-            conceptDir = tempDir.resolve("concepts").toString(),
-            dataServiceDir = tempDir.resolve("data_services").toString(),
-            informationModelDir = tempDir.resolve("information_models").toString(),
-            eventDir = tempDir.resolve("events").toString(),
-            serviceDir = tempDir.resolve("services").toString(),
-        )
-        val payload = mapOf<String, Any?>(
-            "type" to "DATASET_HARVESTED",
-            "harvestRunId" to "run-generic",
-            "uri" to "https://example.com/dataset/generic",
-            "fdkId" to "generic-dataset-1",
-            "graph" to "<> a <http://example.org/Dataset> .",
-            "timestamp" to "1700000000000",
-        )
+        val service =
+            EventArchiveService(
+                datasetDir = datasetDir,
+                conceptDir = tempDir.resolve("concepts").toString(),
+                dataServiceDir = tempDir.resolve("data_services").toString(),
+                informationModelDir = tempDir.resolve("information_models").toString(),
+                eventDir = tempDir.resolve("events").toString(),
+                serviceDir = tempDir.resolve("services").toString(),
+            )
+        val payload =
+            mapOf<String, Any?>(
+                "type" to "DATASET_HARVESTED",
+                "harvestRunId" to "run-generic",
+                "uri" to "https://example.com/dataset/generic",
+                "fdkId" to "generic-dataset-1",
+                "graph" to "<> a <http://example.org/Dataset> .",
+                "timestamp" to "1700000000000",
+            )
 
         service.saveGenericForTopic("dataset-events", payload)
 
@@ -279,24 +324,28 @@ class EventArchiveServiceTest {
     }
 
     @Test
-    fun `saveGenericForTopic writes to correct directory per topic`(@TempDir tempDir: Path) {
+    fun `saveGenericForTopic writes to correct directory per topic`(
+        @TempDir tempDir: Path,
+    ) {
         val conceptDir = tempDir.resolve("concepts").toString()
-        val service = EventArchiveService(
-            datasetDir = tempDir.resolve("datasets").toString(),
-            conceptDir = conceptDir,
-            dataServiceDir = tempDir.resolve("data_services").toString(),
-            informationModelDir = tempDir.resolve("information_models").toString(),
-            eventDir = tempDir.resolve("events").toString(),
-            serviceDir = tempDir.resolve("services").toString(),
-        )
-        val payload = mapOf<String, Any?>(
-            "type" to "CONCEPT_REMOVED",
-            "harvestRunId" to null,
-            "uri" to null,
-            "fdkId" to "concept-generic-1",
-            "graph" to "",
-            "timestamp" to "99",
-        )
+        val service =
+            EventArchiveService(
+                datasetDir = tempDir.resolve("datasets").toString(),
+                conceptDir = conceptDir,
+                dataServiceDir = tempDir.resolve("data_services").toString(),
+                informationModelDir = tempDir.resolve("information_models").toString(),
+                eventDir = tempDir.resolve("events").toString(),
+                serviceDir = tempDir.resolve("services").toString(),
+            )
+        val payload =
+            mapOf<String, Any?>(
+                "type" to "CONCEPT_REMOVED",
+                "harvestRunId" to null,
+                "uri" to null,
+                "fdkId" to "concept-generic-1",
+                "graph" to "",
+                "timestamp" to "99",
+            )
 
         service.saveGenericForTopic("concept-events", payload)
 
@@ -306,21 +355,25 @@ class EventArchiveServiceTest {
     }
 
     @Test
-    fun `saveGenericForTopic does not write when event type is not allowed for topic`(@TempDir tempDir: Path) {
+    fun `saveGenericForTopic does not write when event type is not allowed for topic`(
+        @TempDir tempDir: Path,
+    ) {
         val datasetDir = tempDir.resolve("datasets").toString()
-        val service = EventArchiveService(
-            datasetDir = datasetDir,
-            conceptDir = tempDir.resolve("concepts").toString(),
-            dataServiceDir = tempDir.resolve("data_services").toString(),
-            informationModelDir = tempDir.resolve("information_models").toString(),
-            eventDir = tempDir.resolve("events").toString(),
-            serviceDir = tempDir.resolve("services").toString(),
-        )
-        val payload = mapOf<String, Any?>(
-            "type" to "DATASET_REASONED",
-            "fdkId" to "skip-me",
-            "timestamp" to "1",
-        )
+        val service =
+            EventArchiveService(
+                datasetDir = datasetDir,
+                conceptDir = tempDir.resolve("concepts").toString(),
+                dataServiceDir = tempDir.resolve("data_services").toString(),
+                informationModelDir = tempDir.resolve("information_models").toString(),
+                eventDir = tempDir.resolve("events").toString(),
+                serviceDir = tempDir.resolve("services").toString(),
+            )
+        val payload =
+            mapOf<String, Any?>(
+                "type" to "DATASET_REASONED",
+                "fdkId" to "skip-me",
+                "timestamp" to "1",
+            )
 
         service.saveGenericForTopic("dataset-events", payload)
 
@@ -329,21 +382,25 @@ class EventArchiveServiceTest {
     }
 
     @Test
-    fun `saveGenericForTopic does not write when topic is unknown`(@TempDir tempDir: Path) {
+    fun `saveGenericForTopic does not write when topic is unknown`(
+        @TempDir tempDir: Path,
+    ) {
         val datasetDir = tempDir.resolve("datasets").toString()
-        val service = EventArchiveService(
-            datasetDir = datasetDir,
-            conceptDir = tempDir.resolve("concepts").toString(),
-            dataServiceDir = tempDir.resolve("data_services").toString(),
-            informationModelDir = tempDir.resolve("information_models").toString(),
-            eventDir = tempDir.resolve("events").toString(),
-            serviceDir = tempDir.resolve("services").toString(),
-        )
-        val payload = mapOf<String, Any?>(
-            "type" to "DATASET_HARVESTED",
-            "fdkId" to "no-topic",
-            "timestamp" to "1",
-        )
+        val service =
+            EventArchiveService(
+                datasetDir = datasetDir,
+                conceptDir = tempDir.resolve("concepts").toString(),
+                dataServiceDir = tempDir.resolve("data_services").toString(),
+                informationModelDir = tempDir.resolve("information_models").toString(),
+                eventDir = tempDir.resolve("events").toString(),
+                serviceDir = tempDir.resolve("services").toString(),
+            )
+        val payload =
+            mapOf<String, Any?>(
+                "type" to "DATASET_HARVESTED",
+                "fdkId" to "no-topic",
+                "timestamp" to "1",
+            )
 
         service.saveGenericForTopic("unknown-topic", payload)
 
@@ -352,23 +409,28 @@ class EventArchiveServiceTest {
     }
 
     @Test
-    fun `directory is zipped when size exceeds threshold`(@TempDir tempDir: Path) {
+    fun `directory is zipped when size exceeds threshold`(
+        @TempDir tempDir: Path,
+    ) {
         val datasetDir = tempDir.resolve("datasets").toString()
-        val service = EventArchiveService(
-            datasetDir = datasetDir,
-            conceptDir = tempDir.resolve("concepts").toString(),
-            dataServiceDir = tempDir.resolve("data_services").toString(),
-            informationModelDir = tempDir.resolve("information_models").toString(),
-            eventDir = tempDir.resolve("events").toString(),
-            serviceDir = tempDir.resolve("services").toString(),
-        )
+        val service =
+            EventArchiveService(
+                datasetDir = datasetDir,
+                conceptDir = tempDir.resolve("concepts").toString(),
+                dataServiceDir = tempDir.resolve("data_services").toString(),
+                informationModelDir = tempDir.resolve("information_models").toString(),
+                eventDir = tempDir.resolve("events").toString(),
+                serviceDir = tempDir.resolve("services").toString(),
+            )
 
-        val event = DatasetEvent.newBuilder()
-            .setType(DatasetEventType.DATASET_HARVESTED)
-            .setFdkId("zip-test")
-            .setGraph("<> a <http://example.org/Dataset> .")
-            .setTimestamp(1L)
-            .build()
+        val event =
+            DatasetEvent
+                .newBuilder()
+                .setType(DatasetEventType.DATASET_HARVESTED)
+                .setFdkId("zip-test")
+                .setGraph("<> a <http://example.org/Dataset> .")
+                .setTimestamp(1L)
+                .build()
 
         // Write a small file so the directory is non-empty
         service.saveDataset(event)
@@ -376,18 +438,21 @@ class EventArchiveServiceTest {
         val datasetPath = Path.of(datasetDir)
 
         // Invoke the private createZipIfLargerThanThreshold with a very small threshold so it triggers in the test
-        val method = EventArchiveService::class.java.getDeclaredMethod(
-            "createZipIfLargerThanThreshold",
-            Path::class.java,
-            Long::class.javaPrimitiveType,
-            Int::class.javaPrimitiveType,
-        )
+        val method =
+            EventArchiveService::class.java.getDeclaredMethod(
+                "createZipIfLargerThanThreshold",
+                Path::class.java,
+                Long::class.javaPrimitiveType,
+                Int::class.javaPrimitiveType,
+            )
         method.isAccessible = true
         method.invoke(service, datasetPath, 1L, 1)
 
-        val zipFiles = Files.list(tempDir)
-            .filter { it.fileName.toString().endsWith(".zip") }
-            .toList()
+        val zipFiles =
+            Files
+                .list(tempDir)
+                .filter { it.fileName.toString().endsWith(".zip") }
+                .toList()
 
         assertThat(zipFiles).isNotEmpty()
     }

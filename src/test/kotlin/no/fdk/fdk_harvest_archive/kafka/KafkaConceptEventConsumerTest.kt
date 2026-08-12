@@ -15,7 +15,6 @@ import java.time.Duration
 
 @Tag("unit")
 class KafkaConceptEventConsumerTest {
-
     private val circuitBreaker: KafkaConceptEventCircuitBreaker = mockk()
     private val consumer = KafkaConceptEventConsumer(circuitBreaker)
     private val ack: Acknowledgment = mockk(relaxed = true)
@@ -43,14 +42,16 @@ class KafkaConceptEventConsumerTest {
 
     @Test
     fun `consumeConceptEvent processes CONCEPT_HARVESTED and acknowledges on success`() {
-        val event = ConceptEvent.newBuilder()
-            .setType(ConceptEventType.CONCEPT_HARVESTED)
-            .setHarvestRunId("12")
-            .setUri("https://concept.test")
-            .setFdkId("test-concept-123")
-            .setGraph("<http://example.org/concept/123> a <http://www.w3.org/2004/02/skos/core#Concept> .")
-            .setTimestamp(123)
-            .build()
+        val event =
+            ConceptEvent
+                .newBuilder()
+                .setType(ConceptEventType.CONCEPT_HARVESTED)
+                .setHarvestRunId("12")
+                .setUri("https://concept.test")
+                .setFdkId("test-concept-123")
+                .setGraph("<http://example.org/concept/123> a <http://www.w3.org/2004/02/skos/core#Concept> .")
+                .setTimestamp(123)
+                .build()
         val record: ConsumerRecord<String, Any> = ConsumerRecord("concept-events", 0, 0L, "key", event as Any)
 
         every { circuitBreaker.process(any()) } returns Unit
@@ -64,14 +65,16 @@ class KafkaConceptEventConsumerTest {
 
     @Test
     fun `consumeConceptEvent processes CONCEPT_REMOVED and acknowledges on success`() {
-        val event = ConceptEvent.newBuilder()
-            .setType(ConceptEventType.CONCEPT_REMOVED)
-            .setHarvestRunId("12")
-            .setUri("https://concept.test")
-            .setFdkId("test-concept-123")
-            .setGraph("")
-            .setTimestamp(123)
-            .build()
+        val event =
+            ConceptEvent
+                .newBuilder()
+                .setType(ConceptEventType.CONCEPT_REMOVED)
+                .setHarvestRunId("12")
+                .setUri("https://concept.test")
+                .setFdkId("test-concept-123")
+                .setGraph("")
+                .setTimestamp(123)
+                .build()
         val record: ConsumerRecord<String, Any> = ConsumerRecord("concept-events", 0, 0L, "key", event as Any)
 
         every { circuitBreaker.process(any()) } returns Unit
@@ -85,14 +88,16 @@ class KafkaConceptEventConsumerTest {
 
     @Test
     fun `consumeConceptEvent nacks on processing error`() {
-        val event = ConceptEvent.newBuilder()
-            .setType(ConceptEventType.CONCEPT_HARVESTED)
-            .setHarvestRunId("12")
-            .setUri("https://concept.test")
-            .setFdkId("test-concept-123")
-            .setGraph("<http://example.org/concept/123> a <http://www.w3.org/2004/02/skos/core#Concept> .")
-            .setTimestamp(123)
-            .build()
+        val event =
+            ConceptEvent
+                .newBuilder()
+                .setType(ConceptEventType.CONCEPT_HARVESTED)
+                .setHarvestRunId("12")
+                .setUri("https://concept.test")
+                .setFdkId("test-concept-123")
+                .setGraph("<http://example.org/concept/123> a <http://www.w3.org/2004/02/skos/core#Concept> .")
+                .setTimestamp(123)
+                .build()
         val record: ConsumerRecord<String, Any> = ConsumerRecord("concept-events", 0, 0L, "key", event as Any)
 
         every { circuitBreaker.process(any()) } throws RuntimeException("boom")

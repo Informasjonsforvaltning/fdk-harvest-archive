@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component
  */
 @Component
 class KafkaManager(
-    private val registry: KafkaListenerEndpointRegistry
+    private val registry: KafkaListenerEndpointRegistry,
 ) {
     fun pause(id: String) {
         LOGGER.debug("Pausing kafka listener containers with id: {}", id)

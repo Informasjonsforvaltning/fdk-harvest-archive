@@ -13,18 +13,19 @@ import java.time.Duration
 
 @Tag("unit")
 class CircuitBreakerConsumerConfigurationTest {
-
     @Test
     fun `circuit breaker opens after repeated failures and pauses kafka listener`() {
         val kafkaManager = mockk<KafkaManager>(relaxed = true)
 
-        val cbConfig = CircuitBreakerConfig.custom()
-            .slidingWindowType(CircuitBreakerConfig.SlidingWindowType.COUNT_BASED)
-            .slidingWindowSize(2)
-            .minimumNumberOfCalls(2)
-            .failureRateThreshold(50.0f)
-            .waitDurationInOpenState(Duration.ofMillis(10))
-            .build()
+        val cbConfig =
+            CircuitBreakerConfig
+                .custom()
+                .slidingWindowType(CircuitBreakerConfig.SlidingWindowType.COUNT_BASED)
+                .slidingWindowSize(2)
+                .minimumNumberOfCalls(2)
+                .failureRateThreshold(50.0f)
+                .waitDurationInOpenState(Duration.ofMillis(10))
+                .build()
 
         val registry = CircuitBreakerRegistry.of(cbConfig)
         HarvestCircuitBreakerConfig(kafkaManager).registerListeners(registry)

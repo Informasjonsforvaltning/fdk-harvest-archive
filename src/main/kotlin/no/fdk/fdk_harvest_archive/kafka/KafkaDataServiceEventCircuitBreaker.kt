@@ -22,14 +22,14 @@ open class KafkaDataServiceEventCircuitBreaker(
     @param:Qualifier("dataServiceArchiveCircuitBreaker")
     private val circuitBreaker: CircuitBreaker,
 ) : KafkaCircuitBreakerApi {
-
     override fun process(record: ConsumerRecord<String, Any>) {
         circuitBreaker.executeRunnable {
             try {
                 when (val value = record.value()) {
                     is DataServiceEvent -> {
-
-                        if (value.type != DataServiceEventType.DATA_SERVICE_HARVESTED && value.type != DataServiceEventType.DATA_SERVICE_REMOVED) {
+                        if (value.type != DataServiceEventType.DATA_SERVICE_HARVESTED &&
+                            value.type != DataServiceEventType.DATA_SERVICE_REMOVED
+                        ) {
                             LOGGER.debug("Skipping data service event with type {}.", value.type)
                             return@executeRunnable
                         }
@@ -37,13 +37,17 @@ open class KafkaDataServiceEventCircuitBreaker(
                         eventArchiveService.saveDataService(value)
                     }
 
-                    is GenericRecord -> genericProcessor.process(value, TOPIC)
+                    is GenericRecord -> {
+                        genericProcessor.process(value, TOPIC)
+                    }
 
-                    else -> LOGGER.warn(
-                        "Skipping unsupported data service record value type {} on topic {}",
-                        value?.javaClass?.name,
-                        record.topic()
-                    )
+                    else -> {
+                        LOGGER.warn(
+                            "Skipping unsupported data service record value type {} on topic {}",
+                            value?.javaClass?.name,
+                            record.topic(),
+                        )
+                    }
                 }
             } catch (e: Exception) {
                 LOGGER.error("Error processing data service event", e)

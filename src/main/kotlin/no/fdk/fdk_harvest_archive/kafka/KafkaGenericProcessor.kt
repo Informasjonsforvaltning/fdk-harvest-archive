@@ -10,17 +10,20 @@ import org.springframework.stereotype.Component
 open class KafkaGenericProcessor(
     private val eventArchiveService: EventArchiveService,
 ) {
-
-    fun process(event: GenericRecord, topic: String) {
+    fun process(
+        event: GenericRecord,
+        topic: String,
+    ) {
         try {
-            val payload = mapOf<String, Any?>(
-                "type" to event.get("type")?.toString(),
-                "harvestRunId" to event.get("harvestRunId")?.toString(),
-                "uri" to event.get("uri")?.toString(),
-                "fdkId" to event.get("fdkId")?.toString(),
-                "graph" to event.get("graph")?.toString(),
-                "timestamp" to event.get("timestamp")?.toString(),
-            )
+            val payload =
+                mapOf<String, Any?>(
+                    "type" to event.get("type")?.toString(),
+                    "harvestRunId" to event.get("harvestRunId")?.toString(),
+                    "uri" to event.get("uri")?.toString(),
+                    "fdkId" to event.get("fdkId")?.toString(),
+                    "graph" to event.get("graph")?.toString(),
+                    "timestamp" to event.get("timestamp")?.toString(),
+                )
             eventArchiveService.saveGenericForTopic(topic, payload)
         } catch (e: Exception) {
             LOGGER.error("Error processing generic record with fdkId: {} and type: {}", event.get("fdkId"), event.get("type"), e)

@@ -22,7 +22,6 @@ open class KafkaConceptEventCircuitBreaker(
     @param:Qualifier("conceptArchiveCircuitBreaker")
     private val circuitBreaker: CircuitBreaker,
 ) : KafkaCircuitBreakerApi {
-
     override fun process(record: ConsumerRecord<String, Any>) {
         try {
             circuitBreaker.executeRunnable {
@@ -36,13 +35,17 @@ open class KafkaConceptEventCircuitBreaker(
                         eventArchiveService.saveConcept(value)
                     }
 
-                    is GenericRecord -> genericProcessor.process(value, TOPIC)
+                    is GenericRecord -> {
+                        genericProcessor.process(value, TOPIC)
+                    }
 
-                    else -> LOGGER.warn(
-                        "Skipping unsupported concept record value type {} on topic {}",
-                        value?.javaClass?.name,
-                        record.topic()
-                    )
+                    else -> {
+                        LOGGER.warn(
+                            "Skipping unsupported concept record value type {} on topic {}",
+                            value?.javaClass?.name,
+                            record.topic(),
+                        )
+                    }
                 }
             }
         } catch (e: Exception) {

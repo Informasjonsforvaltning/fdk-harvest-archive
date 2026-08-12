@@ -22,7 +22,6 @@ open class KafkaDatasetEventCircuitBreaker(
     @param:Qualifier("datasetArchiveCircuitBreaker")
     private val circuitBreaker: CircuitBreaker,
 ) : KafkaCircuitBreakerApi {
-
     override fun process(record: ConsumerRecord<String, Any>) {
         circuitBreaker.executeRunnable {
             try {
@@ -36,13 +35,17 @@ open class KafkaDatasetEventCircuitBreaker(
                         eventArchiveService.saveDataset(value)
                     }
 
-                    is GenericRecord -> genericProcessor.process(value, TOPIC)
+                    is GenericRecord -> {
+                        genericProcessor.process(value, TOPIC)
+                    }
 
-                    else -> LOGGER.warn(
-                        "Skipping unsupported dataset record value type {} on topic {}",
-                        value?.javaClass?.name,
-                        record.topic()
-                    )
+                    else -> {
+                        LOGGER.warn(
+                            "Skipping unsupported dataset record value type {} on topic {}",
+                            value?.javaClass?.name,
+                            record.topic(),
+                        )
+                    }
                 }
             } catch (e: Exception) {
                 LOGGER.error("Error processing dataset event", e)
