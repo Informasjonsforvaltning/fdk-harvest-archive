@@ -282,9 +282,6 @@
                 </executions>
             </plugin>
 
-            <!-- ktlint derives its source roots from the project's compile source roots,
-                 which only contain src/main/java. Registering the Kotlin sources here is
-                 what makes ktlint actually see them. -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
@@ -325,9 +322,8 @@
                 <version>${ktlint.version}</version>
                 <executions>
                     <execution>
-                        <id>format-and-check</id>
+                        <id>ktlint-check</id>
                         <goals>
-                            <goal>format</goal>
                             <goal>check</goal>
                         </goals>
                     </execution>
