@@ -8,6 +8,7 @@ import no.fdk.dataservice.DataServiceEvent
 import no.fdk.dataservice.DataServiceEventType
 import no.fdk.event.EventEvent
 import no.fdk.event.EventEventType
+import no.fdk.fdk_harvest_archive.kafka.KafkaConfig
 import no.fdk.informationmodel.InformationModelEvent
 import no.fdk.informationmodel.InformationModelEventType
 import no.fdk.service.ServiceEvent
@@ -228,12 +229,11 @@ class HarvestArchiveIT {
     }
 
     private fun produceAvroEvent(topic: String, key: String, event: Any) {
-        val props = mapOf(
-            ProducerConfig.BOOTSTRAP_SERVERS_CONFIG to kafka.bootstrapServers,
-            ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG to StringSerializer::class.java.name,
-            ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG to "io.confluent.kafka.serializers.KafkaAvroSerializer",
-            "schema.registry.url" to MOCK_SCHEMA_REGISTRY_URL,
-        )
+        val props = KafkaConfig.schemaRegistrySerdeConfig(MOCK_SCHEMA_REGISTRY_URL).apply {
+            put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafka.bootstrapServers)
+            put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer::class.java.name)
+            put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "io.confluent.kafka.serializers.KafkaAvroSerializer")
+        }
         KafkaProducer<String, Any>(props).use { producer ->
             producer.send(ProducerRecord(topic, key, event)).get(10, TimeUnit.SECONDS)
         }
