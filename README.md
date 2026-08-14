@@ -78,3 +78,12 @@ Topic names can be overridden via `APP_KAFKA_TOPIC_*` (see `application.yml`).
 - `kafka/schemas/` – Avro schemas (`.avsc`) for each event type
 - `docker-compose.yml` – Kafka, Schema Registry, and topic creation for local runs
 - `scripts/` – Optional helpers (e.g. register schema, send test events)
+
+### Formatting code
+
+This project uses [ktlint](https://github.com/gantsign/ktlint-maven-plugin) to enforce a consistent code style.
+To automatically fix formatting violations, run:
+
+```sh
+mvn ktlint:format
+```
