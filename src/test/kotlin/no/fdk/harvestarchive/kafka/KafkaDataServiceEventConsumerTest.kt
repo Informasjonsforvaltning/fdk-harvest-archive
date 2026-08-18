@@ -10,6 +10,7 @@ import no.fdk.dataservice.DataServiceEvent
 import no.fdk.dataservice.DataServiceEventType
 import no.fdk.harvestarchive.archive.ArchiveType
 import no.fdk.harvestarchive.metrics.ArchiveMetrics
+import no.fdk.harvestarchive.metrics.assertEventProcessed
 import org.apache.avro.generic.GenericRecord
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.assertj.core.api.Assertions.assertThat
@@ -21,7 +22,8 @@ import java.time.Duration
 @Tag("unit")
 class KafkaDataServiceEventConsumerTest {
     private val circuitBreaker: KafkaDataServiceEventCircuitBreaker = mockk()
-    private val consumer = KafkaDataServiceEventConsumer(circuitBreaker, ArchiveMetrics(SimpleMeterRegistry()))
+    private val registry = SimpleMeterRegistry()
+    private val consumer = KafkaDataServiceEventConsumer(circuitBreaker, ArchiveMetrics(registry))
     private val ack: Acknowledgment = mockk(relaxed = true)
 
     @Test
@@ -43,6 +45,7 @@ class KafkaDataServiceEventConsumerTest {
         verify(exactly = 1) { circuitBreaker.process(record) }
         verify(exactly = 1) { ack.acknowledge() }
         verify(exactly = 0) { ack.nack(any<Duration>()) }
+        registry.assertEventProcessed(ArchiveType.DATA_SERVICE, "acked")
     }
 
     @Test
@@ -100,6 +103,7 @@ class KafkaDataServiceEventConsumerTest {
 
         verify(exactly = 1) { ack.acknowledge() }
         verify(exactly = 0) { ack.nack(any<Duration>()) }
+        registry.assertEventProcessed(ArchiveType.DATA_SERVICE, "skipped")
     }
 
     @Test
@@ -112,6 +116,7 @@ class KafkaDataServiceEventConsumerTest {
 
         verify(exactly = 1) { ack.nack(Duration.ZERO) }
         verify(exactly = 0) { ack.acknowledge() }
+        registry.assertEventProcessed(ArchiveType.DATA_SERVICE, "circuit_open")
     }
 
     @Test
@@ -135,5 +140,6 @@ class KafkaDataServiceEventConsumerTest {
         verify(exactly = 1) { circuitBreaker.process(record) }
         verify(exactly = 1) { ack.nack(Duration.ZERO) }
         verify(exactly = 0) { ack.acknowledge() }
+        registry.assertEventProcessed(ArchiveType.DATA_SERVICE, "nacked")
     }
 }

@@ -10,6 +10,7 @@ import no.fdk.dataset.DatasetEvent
 import no.fdk.dataset.DatasetEventType
 import no.fdk.harvestarchive.archive.ArchiveType
 import no.fdk.harvestarchive.metrics.ArchiveMetrics
+import no.fdk.harvestarchive.metrics.assertEventProcessed
 import org.apache.avro.generic.GenericRecord
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.assertj.core.api.Assertions.assertThat
@@ -44,6 +45,7 @@ class KafkaDatasetEventConsumerTest {
         verify(exactly = 1) { circuitBreaker.process(record) }
         verify(exactly = 1) { ack.acknowledge() }
         verify(exactly = 0) { ack.nack(any<Duration>()) }
+        registry.assertEventProcessed(ArchiveType.DATASET, "acked")
     }
 
     @Test
@@ -102,16 +104,7 @@ class KafkaDatasetEventConsumerTest {
 
         verify(exactly = 1) { ack.acknowledge() }
         verify(exactly = 0) { ack.nack(any<Duration>()) }
-        assertThat(
-            registry
-                .counter(
-                    "harvest_archive_event_processing_total",
-                    "type",
-                    "datasets",
-                    "result",
-                    "skipped",
-                ).count(),
-        ).isEqualTo(1.0)
+        registry.assertEventProcessed(ArchiveType.DATASET, "skipped")
         assertThat(registry.find("harvest_archive_skipped_total").counter()).isNull()
     }
 
@@ -126,6 +119,7 @@ class KafkaDatasetEventConsumerTest {
 
         verify(exactly = 1) { ack.nack(Duration.ZERO) }
         verify(exactly = 0) { ack.acknowledge() }
+        registry.assertEventProcessed(ArchiveType.DATASET, "circuit_open")
     }
 
     @Test
@@ -149,5 +143,6 @@ class KafkaDatasetEventConsumerTest {
         verify(exactly = 1) { circuitBreaker.process(record) }
         verify(exactly = 1) { ack.nack(Duration.ZERO) }
         verify(exactly = 0) { ack.acknowledge() }
+        registry.assertEventProcessed(ArchiveType.DATASET, "nacked")
     }
 }

@@ -125,4 +125,25 @@ class KafkaDatasetEventCircuitBreakerTest {
         assertThat(outcome).isEqualTo(ProcessOutcome.Skipped(ArchiveType.DATASET))
         verify(exactly = 0) { eventArchiveService.saveDataset(any()) }
     }
+
+    @Test
+    fun `generic harvested record returns Saved from generic processor`() {
+        val genericRecord = mockk<GenericRecord>(relaxed = true)
+        every { genericProcessor.process(genericRecord, ArchiveType.DATASET.topicName) } returns
+            ProcessOutcome.Saved(ArchiveType.DATASET)
+        val record =
+            org.apache.kafka.clients.consumer.ConsumerRecord<String, Any>(
+                ArchiveType.TOPIC_DATASET,
+                0,
+                0L,
+                "key",
+                genericRecord,
+            )
+
+        val outcome = circuitBreaker.process(record)
+
+        assertThat(outcome).isEqualTo(ProcessOutcome.Saved(ArchiveType.DATASET))
+        verify(exactly = 1) { genericProcessor.process(genericRecord, ArchiveType.DATASET.topicName) }
+        verify(exactly = 0) { eventArchiveService.saveDataset(any()) }
+    }
 }

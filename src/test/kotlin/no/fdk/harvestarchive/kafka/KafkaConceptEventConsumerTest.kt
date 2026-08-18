@@ -10,6 +10,7 @@ import no.fdk.concept.ConceptEvent
 import no.fdk.concept.ConceptEventType
 import no.fdk.harvestarchive.archive.ArchiveType
 import no.fdk.harvestarchive.metrics.ArchiveMetrics
+import no.fdk.harvestarchive.metrics.assertEventProcessed
 import org.apache.avro.generic.GenericRecord
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.assertj.core.api.Assertions.assertThat
@@ -21,7 +22,8 @@ import java.time.Duration
 @Tag("unit")
 class KafkaConceptEventConsumerTest {
     private val circuitBreaker: KafkaConceptEventCircuitBreaker = mockk()
-    private val consumer = KafkaConceptEventConsumer(circuitBreaker, ArchiveMetrics(SimpleMeterRegistry()))
+    private val registry = SimpleMeterRegistry()
+    private val consumer = KafkaConceptEventConsumer(circuitBreaker, ArchiveMetrics(registry))
     private val ack: Acknowledgment = mockk(relaxed = true)
 
     @Test
@@ -43,6 +45,7 @@ class KafkaConceptEventConsumerTest {
         verify(exactly = 1) { circuitBreaker.process(record) }
         verify(exactly = 1) { ack.acknowledge() }
         verify(exactly = 0) { ack.nack(any<Duration>()) }
+        registry.assertEventProcessed(ArchiveType.CONCEPT, "acked")
     }
 
     @Test
@@ -100,6 +103,7 @@ class KafkaConceptEventConsumerTest {
 
         verify(exactly = 1) { ack.acknowledge() }
         verify(exactly = 0) { ack.nack(any<Duration>()) }
+        registry.assertEventProcessed(ArchiveType.CONCEPT, "skipped")
     }
 
     @Test
@@ -112,6 +116,7 @@ class KafkaConceptEventConsumerTest {
 
         verify(exactly = 1) { ack.nack(Duration.ZERO) }
         verify(exactly = 0) { ack.acknowledge() }
+        registry.assertEventProcessed(ArchiveType.CONCEPT, "circuit_open")
     }
 
     @Test
@@ -135,5 +140,6 @@ class KafkaConceptEventConsumerTest {
         verify(exactly = 1) { circuitBreaker.process(record) }
         verify(exactly = 1) { ack.nack(Duration.ZERO) }
         verify(exactly = 0) { ack.acknowledge() }
+        registry.assertEventProcessed(ArchiveType.CONCEPT, "nacked")
     }
 }

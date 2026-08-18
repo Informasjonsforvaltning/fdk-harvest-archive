@@ -8,6 +8,7 @@ import no.fdk.harvestarchive.archive.ArchiveType
 import no.fdk.harvestarchive.archive.EventArchiveService
 import no.fdk.service.ServiceEvent
 import no.fdk.service.ServiceEventType
+import org.apache.avro.generic.GenericRecord
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Tag
@@ -98,5 +99,26 @@ class KafkaServiceEventCircuitBreakerTest {
         assertThat(outcome).isEqualTo(ProcessOutcome.Skipped(ArchiveType.SERVICE))
         verify(exactly = 0) { eventArchiveService.saveService(any()) }
         verify(exactly = 0) { genericProcessor.process(any(), any()) }
+    }
+
+    @Test
+    fun `generic harvested record returns Saved from generic processor`() {
+        val genericRecord = mockk<GenericRecord>(relaxed = true)
+        every { genericProcessor.process(genericRecord, ArchiveType.SERVICE.topicName) } returns
+            ProcessOutcome.Saved(ArchiveType.SERVICE)
+        val record =
+            org.apache.kafka.clients.consumer.ConsumerRecord<String, Any>(
+                ArchiveType.TOPIC_SERVICE,
+                0,
+                0L,
+                "key",
+                genericRecord,
+            )
+
+        val outcome = circuitBreaker.process(record)
+
+        assertThat(outcome).isEqualTo(ProcessOutcome.Saved(ArchiveType.SERVICE))
+        verify(exactly = 1) { genericProcessor.process(genericRecord, ArchiveType.SERVICE.topicName) }
+        verify(exactly = 0) { eventArchiveService.saveService(any()) }
     }
 }

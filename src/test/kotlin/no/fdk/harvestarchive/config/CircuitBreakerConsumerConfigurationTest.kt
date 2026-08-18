@@ -9,6 +9,7 @@ import io.mockk.verify
 import no.fdk.harvestarchive.archive.ArchiveType
 import no.fdk.harvestarchive.kafka.KafkaManager
 import no.fdk.harvestarchive.metrics.ArchiveMetrics
+import no.fdk.harvestarchive.metrics.listenerPaused
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
@@ -30,8 +31,10 @@ class CircuitBreakerConsumerConfigurationTest {
                 .waitDurationInOpenState(Duration.ofMillis(10))
                 .build()
 
+        val meterRegistry = SimpleMeterRegistry()
+        val metrics = ArchiveMetrics(meterRegistry)
         val registry = CircuitBreakerRegistry.of(cbConfig)
-        HarvestCircuitBreakerConfig(kafkaManager, ArchiveMetrics(SimpleMeterRegistry())).registerListeners(registry)
+        HarvestCircuitBreakerConfig(kafkaManager, metrics).registerListeners(registry)
         val cb = registry.circuitBreaker(ArchiveType.DATASET.circuitBreakerId)
 
         repeat(2) {
@@ -44,22 +47,29 @@ class CircuitBreakerConsumerConfigurationTest {
 
         assertEquals(CircuitBreaker.State.OPEN, cb.state)
         verify(exactly = 1) { kafkaManager.pause(ArchiveType.DATASET.listenerId) }
+        assertEquals(1.0, meterRegistry.listenerPaused(ArchiveType.DATASET.listenerId))
+        assertEquals(0.0, meterRegistry.listenerPaused(ArchiveType.CONCEPT.listenerId))
     }
 
     @Test
     fun `circuit breaker half-open and closed resumes kafka listener`() {
         val kafkaManager = mockk<KafkaManager>(relaxed = true)
 
+        val meterRegistry = SimpleMeterRegistry()
+        val metrics = ArchiveMetrics(meterRegistry)
         val registry = CircuitBreakerRegistry.ofDefaults()
-        HarvestCircuitBreakerConfig(kafkaManager, ArchiveMetrics(SimpleMeterRegistry())).registerListeners(registry)
+        HarvestCircuitBreakerConfig(kafkaManager, metrics).registerListeners(registry)
         val cb = registry.circuitBreaker(ArchiveType.DATASET.circuitBreakerId)
 
         cb.transitionToOpenState()
+        assertEquals(1.0, meterRegistry.listenerPaused(ArchiveType.DATASET.listenerId))
+
         cb.transitionToHalfOpenState()
         cb.transitionToClosedState()
 
         // OPEN->HALF_OPEN triggers resume, HALF_OPEN->CLOSED triggers resume
         verify(atLeast = 1) { kafkaManager.resume(ArchiveType.DATASET.listenerId) }
+        assertEquals(0.0, meterRegistry.listenerPaused(ArchiveType.DATASET.listenerId))
     }
 
     @Test

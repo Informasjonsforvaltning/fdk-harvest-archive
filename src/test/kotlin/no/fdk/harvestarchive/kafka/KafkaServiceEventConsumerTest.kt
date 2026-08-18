@@ -8,6 +8,7 @@ import io.mockk.mockk
 import io.mockk.verify
 import no.fdk.harvestarchive.archive.ArchiveType
 import no.fdk.harvestarchive.metrics.ArchiveMetrics
+import no.fdk.harvestarchive.metrics.assertEventProcessed
 import no.fdk.service.ServiceEvent
 import no.fdk.service.ServiceEventType
 import org.apache.avro.generic.GenericRecord
@@ -21,7 +22,8 @@ import java.time.Duration
 @Tag("unit")
 class KafkaServiceEventConsumerTest {
     private val circuitBreaker: KafkaServiceEventCircuitBreaker = mockk()
-    private val consumer = KafkaServiceEventConsumer(circuitBreaker, ArchiveMetrics(SimpleMeterRegistry()))
+    private val registry = SimpleMeterRegistry()
+    private val consumer = KafkaServiceEventConsumer(circuitBreaker, ArchiveMetrics(registry))
     private val ack: Acknowledgment = mockk(relaxed = true)
 
     @Test
@@ -43,6 +45,7 @@ class KafkaServiceEventConsumerTest {
         verify(exactly = 1) { circuitBreaker.process(record) }
         verify(exactly = 1) { ack.acknowledge() }
         verify(exactly = 0) { ack.nack(any<Duration>()) }
+        registry.assertEventProcessed(ArchiveType.SERVICE, "acked")
     }
 
     @Test
@@ -100,6 +103,7 @@ class KafkaServiceEventConsumerTest {
 
         verify(exactly = 1) { ack.acknowledge() }
         verify(exactly = 0) { ack.nack(any<Duration>()) }
+        registry.assertEventProcessed(ArchiveType.SERVICE, "skipped")
     }
 
     @Test
@@ -112,6 +116,7 @@ class KafkaServiceEventConsumerTest {
 
         verify(exactly = 1) { ack.nack(Duration.ZERO) }
         verify(exactly = 0) { ack.acknowledge() }
+        registry.assertEventProcessed(ArchiveType.SERVICE, "circuit_open")
     }
 
     @Test
@@ -135,5 +140,6 @@ class KafkaServiceEventConsumerTest {
         verify(exactly = 1) { circuitBreaker.process(record) }
         verify(exactly = 1) { ack.nack(Duration.ZERO) }
         verify(exactly = 0) { ack.acknowledge() }
+        registry.assertEventProcessed(ArchiveType.SERVICE, "nacked")
     }
 }
