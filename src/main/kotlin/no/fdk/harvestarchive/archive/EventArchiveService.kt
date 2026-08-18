@@ -12,13 +12,9 @@ import no.fdk.service.ServiceEvent
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import java.nio.file.Files
-import java.nio.file.Path
 import java.nio.file.Paths
-import java.util.zip.ZipEntry
-import java.util.zip.ZipOutputStream
 import kotlin.time.Duration
 import kotlin.time.measureTimedValue
 
@@ -36,7 +32,6 @@ class EventArchiveService(
     @param:Value($$"${app.archive.service-dir}") private val serviceDir: String,
 ) {
     private val objectMapper = jacksonObjectMapper()
-    private val zipThresholdBytes: Long = ZIP_THRESHOLD_BYTES
 
     private val archiveTypeToDir: Map<ArchiveType, String> =
         mapOf(
@@ -197,77 +192,8 @@ class EventArchiveService(
         return SaveResult(bytes = timed.value, duration = timed.duration)
     }
 
-    /**
-     * Periodically checks each archive directory size and creates a zip (and deletes source files) when over threshold.
-     */
-    @Scheduled(fixedDelayString = $$"${app.archive.zip-check-interval-ms}")
-    fun checkArchiveDirsAndZipIfOverThreshold() {
-        archiveTypeToDir.values
-            .map { Paths.get(it) }
-            .filter { Files.exists(it) }
-            .forEach { createZipIfLargerThanThreshold(it) }
-    }
-
-    private fun createZipIfLargerThanThreshold(
-        dirPath: Path,
-        thresholdBytes: Long = zipThresholdBytes,
-        maxFileCount: Int = ZIP_MAX_FILE_COUNT,
-    ) {
-        val totalSize =
-            Files
-                .walk(dirPath)
-                .filter { Files.isRegularFile(it) }
-                .mapToLong { Files.size(it) }
-                .sum()
-
-        if (totalSize < thresholdBytes) return
-
-        val parent = dirPath.parent ?: return
-        val zipFileName = "${dirPath.fileName}-${System.currentTimeMillis()}.zip"
-        val zipPath = parent.resolve(zipFileName)
-
-        val filesToArchive =
-            Files
-                .walk(dirPath)
-                .filter { Files.isRegularFile(it) }
-                .toList()
-                .take(maxFileCount)
-
-        if (filesToArchive.isEmpty()) return
-
-        ZipOutputStream(Files.newOutputStream(zipPath)).use { zipOut ->
-            filesToArchive.forEach { file ->
-                val entryName = dirPath.relativize(file).toString()
-                zipOut.putNextEntry(ZipEntry(entryName))
-                Files.newInputStream(file).use { input ->
-                    input.copyTo(zipOut)
-                }
-                zipOut.closeEntry()
-            }
-        }
-
-        // Delete files after successful zipping to avoid duplicate storage.
-        filesToArchive.forEach { file ->
-            try {
-                Files.deleteIfExists(file)
-            } catch (ex: Exception) {
-                LOGGER.warn("Failed to delete archived file {}", file, ex)
-            }
-        }
-
-        LOGGER.debug(
-            "Created zip archive {} for directory {} (size {} bytes). Archived and deleted {} files.",
-            zipPath.fileName,
-            dirPath,
-            totalSize,
-            filesToArchive.size,
-        )
-    }
-
     companion object {
         private val LOGGER: Logger = LoggerFactory.getLogger(EventArchiveService::class.java)
-        private const val ZIP_THRESHOLD_BYTES: Long = 10L * 1024 * 1024 * 1024 // 10 GiB
-        private const val ZIP_MAX_FILE_COUNT: Int = 20000 // 20 000 files
     }
 
     private data class SaveResult(val bytes: Long, val duration: Duration)

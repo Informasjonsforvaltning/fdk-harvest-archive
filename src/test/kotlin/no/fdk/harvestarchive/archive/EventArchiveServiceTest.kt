@@ -387,53 +387,6 @@ class EventArchiveServiceTest {
     }
 
     @Test
-    fun `directory is zipped when size exceeds threshold`(@TempDir tempDir: Path) {
-        val datasetDir = tempDir.resolve("datasets").toString()
-        val service =
-            EventArchiveService(
-                datasetDir = datasetDir,
-                conceptDir = tempDir.resolve("concepts").toString(),
-                dataServiceDir = tempDir.resolve("data_services").toString(),
-                informationModelDir = tempDir.resolve("information_models").toString(),
-                eventDir = tempDir.resolve("events").toString(),
-                serviceDir = tempDir.resolve("services").toString(),
-            )
-
-        val event =
-            DatasetEvent
-                .newBuilder()
-                .setType(DatasetEventType.DATASET_HARVESTED)
-                .setFdkId("zip-test")
-                .setGraph("<> a <http://example.org/Dataset> .")
-                .setTimestamp(1L)
-                .build()
-
-        // Write a small file so the directory is non-empty
-        service.saveDataset(event)
-
-        val datasetPath = Path.of(datasetDir)
-
-        // Invoke the private createZipIfLargerThanThreshold with a very small threshold so it triggers in the test
-        val method =
-            EventArchiveService::class.java.getDeclaredMethod(
-                "createZipIfLargerThanThreshold",
-                Path::class.java,
-                Long::class.javaPrimitiveType,
-                Int::class.javaPrimitiveType,
-            )
-        method.isAccessible = true
-        method.invoke(service, datasetPath, 1L, 1)
-
-        val zipFiles =
-            Files
-                .list(tempDir)
-                .filter { it.fileName.toString().endsWith(".zip") }
-                .toList()
-
-        assertThat(zipFiles).isNotEmpty()
-    }
-
-    @Test
     fun `saveDataset records saved file metrics`(@TempDir tempDir: Path) {
         val registry = SimpleMeterRegistry()
         ArchiveMetrics.bind(registry)
