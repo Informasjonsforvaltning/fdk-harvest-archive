@@ -22,10 +22,10 @@ class KafkaInformationModelEventConsumer(
     private fun logger(): Logger = LOGGER
 
     @KafkaListener(
-        topics = ["information-model-events"],
+        topics = [ArchiveType.TOPIC_INFORMATION_MODEL],
         groupId = "fdk-harvest-archive",
         containerFactory = "kafkaListenerContainerFactory",
-        id = LISTENER_ID,
+        id = ArchiveType.LISTENER_INFORMATION_MODEL,
     )
     fun consumeInformationModelEvent(record: ConsumerRecord<String, Any>, ack: Acknowledgment) {
         logger().debug("Received information model event - offset: {}, partition: {}", record.offset(), record.partition())
@@ -50,6 +50,5 @@ class KafkaInformationModelEventConsumer(
     companion object {
         private val LOGGER: Logger = LoggerFactory.getLogger(KafkaInformationModelEventConsumer::class.java)
         private val ARCHIVE_TYPE = ArchiveType.INFORMATION_MODEL
-        const val LISTENER_ID = "informationmodel-archive"
     }
 }

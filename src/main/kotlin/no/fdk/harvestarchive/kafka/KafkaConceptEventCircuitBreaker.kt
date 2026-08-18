@@ -32,7 +32,7 @@ open class KafkaConceptEventCircuitBreaker(
                         ProcessOutcome.Saved(ARCHIVE_TYPE)
                     }
 
-                    is GenericRecord -> genericProcessor.process(value, TOPIC)
+                    is GenericRecord -> genericProcessor.process(value, ARCHIVE_TYPE.topicName)
 
                     else -> {
                         LOGGER.warn(
@@ -52,7 +52,6 @@ open class KafkaConceptEventCircuitBreaker(
 
     companion object {
         private val LOGGER: Logger = LoggerFactory.getLogger(KafkaConceptEventCircuitBreaker::class.java)
-        private const val TOPIC = "concept-events"
         private val ARCHIVE_TYPE = ArchiveType.CONCEPT
     }
 }

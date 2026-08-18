@@ -5,13 +5,8 @@ import io.github.resilience4j.circuitbreaker.CircuitBreaker.StateTransition
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry
 import io.github.resilience4j.circuitbreaker.event.CircuitBreakerOnStateTransitionEvent
-import no.fdk.harvestarchive.kafka.KafkaConceptEventConsumer
-import no.fdk.harvestarchive.kafka.KafkaDataServiceEventConsumer
-import no.fdk.harvestarchive.kafka.KafkaDatasetEventConsumer
-import no.fdk.harvestarchive.kafka.KafkaEventEventConsumer
-import no.fdk.harvestarchive.kafka.KafkaInformationModelEventConsumer
+import no.fdk.harvestarchive.archive.ArchiveType
 import no.fdk.harvestarchive.kafka.KafkaManager
-import no.fdk.harvestarchive.kafka.KafkaServiceEventConsumer
 import no.fdk.harvestarchive.metrics.ArchiveMetrics
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Bean
@@ -39,44 +34,17 @@ open class HarvestCircuitBreakerConfig(private val kafkaManager: KafkaManager, p
     }
 
     open fun registerListeners(registry: CircuitBreakerRegistry) {
-        attachListener(
-            registry,
-            DATASET_CIRCUIT_BREAKER_ID,
-            KafkaDatasetEventConsumer.LISTENER_ID,
-        )
-        attachListener(
-            registry,
-            CONCEPT_CIRCUIT_BREAKER_ID,
-            KafkaConceptEventConsumer.LISTENER_ID,
-        )
-        attachListener(
-            registry,
-            DATA_SERVICE_CIRCUIT_BREAKER_ID,
-            KafkaDataServiceEventConsumer.LISTENER_ID,
-        )
-        attachListener(
-            registry,
-            INFORMATION_MODEL_CIRCUIT_BREAKER_ID,
-            KafkaInformationModelEventConsumer.LISTENER_ID,
-        )
-        attachListener(
-            registry,
-            EVENT_CIRCUIT_BREAKER_ID,
-            KafkaEventEventConsumer.LISTENER_ID,
-        )
-        attachListener(
-            registry,
-            SERVICE_CIRCUIT_BREAKER_ID,
-            KafkaServiceEventConsumer.LISTENER_ID,
-        )
+        ArchiveType.entries.forEach { archiveType ->
+            attachListener(registry, archiveType)
+        }
     }
 
-    private fun attachListener(registry: CircuitBreakerRegistry, breakerId: String, listenerId: String) {
+    private fun attachListener(registry: CircuitBreakerRegistry, archiveType: ArchiveType) {
         registry
-            .circuitBreaker(breakerId)
+            .circuitBreaker(archiveType.circuitBreakerId)
             .eventPublisher
             .onStateTransition { event: CircuitBreakerOnStateTransitionEvent ->
-                handleStateTransition(event, listenerId)
+                handleStateTransition(event, archiveType.listenerId)
             }
     }
 
@@ -110,35 +78,29 @@ open class HarvestCircuitBreakerConfig(private val kafkaManager: KafkaManager, p
 
     @Bean
     open fun datasetArchiveCircuitBreaker(registry: CircuitBreakerRegistry): CircuitBreaker =
-        registry.circuitBreaker(DATASET_CIRCUIT_BREAKER_ID)
+        registry.circuitBreaker(ArchiveType.DATASET.circuitBreakerId)
 
     @Bean
     open fun conceptArchiveCircuitBreaker(registry: CircuitBreakerRegistry): CircuitBreaker =
-        registry.circuitBreaker(CONCEPT_CIRCUIT_BREAKER_ID)
+        registry.circuitBreaker(ArchiveType.CONCEPT.circuitBreakerId)
 
     @Bean
     open fun dataServiceArchiveCircuitBreaker(registry: CircuitBreakerRegistry): CircuitBreaker =
-        registry.circuitBreaker(DATA_SERVICE_CIRCUIT_BREAKER_ID)
+        registry.circuitBreaker(ArchiveType.DATA_SERVICE.circuitBreakerId)
 
     @Bean
     open fun informationModelArchiveCircuitBreaker(registry: CircuitBreakerRegistry): CircuitBreaker =
-        registry.circuitBreaker(INFORMATION_MODEL_CIRCUIT_BREAKER_ID)
+        registry.circuitBreaker(ArchiveType.INFORMATION_MODEL.circuitBreakerId)
 
     @Bean
     open fun eventArchiveCircuitBreaker(registry: CircuitBreakerRegistry): CircuitBreaker =
-        registry.circuitBreaker(EVENT_CIRCUIT_BREAKER_ID)
+        registry.circuitBreaker(ArchiveType.EVENT.circuitBreakerId)
 
     @Bean
     open fun serviceArchiveCircuitBreaker(registry: CircuitBreakerRegistry): CircuitBreaker =
-        registry.circuitBreaker(SERVICE_CIRCUIT_BREAKER_ID)
+        registry.circuitBreaker(ArchiveType.SERVICE.circuitBreakerId)
 
     companion object {
         private val LOGGER = LoggerFactory.getLogger(HarvestCircuitBreakerConfig::class.java)
-        const val CONCEPT_CIRCUIT_BREAKER_ID = "concept-archive-cb"
-        const val DATA_SERVICE_CIRCUIT_BREAKER_ID = "dataservice-archive-cb"
-        const val DATASET_CIRCUIT_BREAKER_ID = "dataset-archive-cb"
-        const val EVENT_CIRCUIT_BREAKER_ID = "event-archive-cb"
-        const val INFORMATION_MODEL_CIRCUIT_BREAKER_ID = "informationmodel-archive-cb"
-        const val SERVICE_CIRCUIT_BREAKER_ID = "service-archive-cb"
     }
 }

@@ -33,7 +33,7 @@ open class KafkaInformationModelEventCircuitBreaker(
                     ProcessOutcome.Saved(ARCHIVE_TYPE)
                 }
 
-                is GenericRecord -> genericProcessor.process(value, TOPIC)
+                is GenericRecord -> genericProcessor.process(value, ARCHIVE_TYPE.topicName)
 
                 else -> {
                     LOGGER.warn(
@@ -52,7 +52,6 @@ open class KafkaInformationModelEventCircuitBreaker(
 
     companion object {
         private val LOGGER: Logger = LoggerFactory.getLogger(KafkaInformationModelEventCircuitBreaker::class.java)
-        private const val TOPIC = "information-model-events"
         private val ARCHIVE_TYPE = ArchiveType.INFORMATION_MODEL
     }
 }

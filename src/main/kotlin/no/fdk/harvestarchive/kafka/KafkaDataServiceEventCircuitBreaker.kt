@@ -33,7 +33,7 @@ open class KafkaDataServiceEventCircuitBreaker(
                     ProcessOutcome.Saved(ARCHIVE_TYPE)
                 }
 
-                is GenericRecord -> genericProcessor.process(value, TOPIC)
+                is GenericRecord -> genericProcessor.process(value, ARCHIVE_TYPE.topicName)
 
                 else -> {
                     LOGGER.warn(
@@ -52,7 +52,6 @@ open class KafkaDataServiceEventCircuitBreaker(
 
     companion object {
         private val LOGGER: Logger = LoggerFactory.getLogger(KafkaDataServiceEventCircuitBreaker::class.java)
-        private const val TOPIC = "data-service-events"
         private val ARCHIVE_TYPE = ArchiveType.DATA_SERVICE
     }
 }

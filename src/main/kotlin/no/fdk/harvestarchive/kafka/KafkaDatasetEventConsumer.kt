@@ -22,10 +22,10 @@ class KafkaDatasetEventConsumer(
     private fun logger(): Logger = LOGGER
 
     @KafkaListener(
-        topics = ["dataset-events"],
+        topics = [ArchiveType.TOPIC_DATASET],
         groupId = "fdk-harvest-archive",
         containerFactory = "kafkaListenerContainerFactory",
-        id = LISTENER_ID,
+        id = ArchiveType.LISTENER_DATASET,
     )
     fun consumeDatasetEvent(record: ConsumerRecord<String, Any>, ack: Acknowledgment) {
         logger().debug("Received harvest event - offset: {}, partition: {}", record.offset(), record.partition())
@@ -50,6 +50,5 @@ class KafkaDatasetEventConsumer(
     companion object {
         private val LOGGER: Logger = LoggerFactory.getLogger(KafkaDatasetEventConsumer::class.java)
         private val ARCHIVE_TYPE = ArchiveType.DATASET
-        const val LISTENER_ID = "dataset-archive"
     }
 }

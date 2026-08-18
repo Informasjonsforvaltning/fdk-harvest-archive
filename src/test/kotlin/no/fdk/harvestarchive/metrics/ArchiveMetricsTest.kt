@@ -138,19 +138,19 @@ class ArchiveMetricsTest {
     fun `gauges expose listener paused and directory snapshots`() {
         assertEquals(
             0.0,
-            registry.find("kafka_listener_paused").tag("listener", "dataset-archive").gauge()?.value(),
+            registry.find("kafka_listener_paused").tag("listener", ArchiveType.DATASET.listenerId).gauge()?.value(),
         )
         assertEquals(
             0.0,
             registry.find("harvest_archive_dir_bytes").tag("type", "datasets").gauge()?.value(),
         )
 
-        metrics.setListenerPaused("dataset-archive", true)
+        metrics.setListenerPaused(ArchiveType.DATASET.listenerId, true)
         metrics.updateDirectorySnapshot(ArchiveType.DATASET, 1024, 7)
 
         assertEquals(
             1.0,
-            registry.find("kafka_listener_paused").tag("listener", "dataset-archive").gauge()?.value(),
+            registry.find("kafka_listener_paused").tag("listener", ArchiveType.DATASET.listenerId).gauge()?.value(),
         )
         assertEquals(
             1024.0,

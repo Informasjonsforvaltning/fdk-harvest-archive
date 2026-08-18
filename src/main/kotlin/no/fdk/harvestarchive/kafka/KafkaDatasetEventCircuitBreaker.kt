@@ -31,7 +31,7 @@ open class KafkaDatasetEventCircuitBreaker(
                     ProcessOutcome.Saved(ARCHIVE_TYPE)
                 }
 
-                is GenericRecord -> genericProcessor.process(value, TOPIC)
+                is GenericRecord -> genericProcessor.process(value, ARCHIVE_TYPE.topicName)
 
                 else -> {
                     LOGGER.warn(
@@ -50,7 +50,6 @@ open class KafkaDatasetEventCircuitBreaker(
 
     companion object {
         private val LOGGER: Logger = LoggerFactory.getLogger(KafkaDatasetEventCircuitBreaker::class.java)
-        private const val TOPIC = "dataset-events"
         private val ARCHIVE_TYPE = ArchiveType.DATASET
     }
 }

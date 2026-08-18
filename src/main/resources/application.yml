@@ -36,6 +36,7 @@ app:
 
 resilience4j:
   circuitbreaker:
+    # Instance names must match ArchiveType.circuitBreakerId
     instances:
       dataset-archive-cb:
         baseConfig: default

@@ -22,10 +22,10 @@ class KafkaServiceEventConsumer(
     private fun logger(): Logger = LOGGER
 
     @KafkaListener(
-        topics = ["service-events"],
+        topics = [ArchiveType.TOPIC_SERVICE],
         groupId = "fdk-harvest-archive",
         containerFactory = "kafkaListenerContainerFactory",
-        id = LISTENER_ID,
+        id = ArchiveType.LISTENER_SERVICE,
     )
     fun consumeServiceEvent(record: ConsumerRecord<String, Any>, ack: Acknowledgment) {
         logger().debug("Received service event - offset: {}, partition: {}", record.offset(), record.partition())
@@ -50,6 +50,5 @@ class KafkaServiceEventConsumer(
     companion object {
         private val LOGGER: Logger = LoggerFactory.getLogger(KafkaServiceEventConsumer::class.java)
         private val ARCHIVE_TYPE = ArchiveType.SERVICE
-        const val LISTENER_ID = "service-archive"
     }
 }

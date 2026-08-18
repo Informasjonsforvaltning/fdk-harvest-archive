@@ -22,10 +22,10 @@ class KafkaConceptEventConsumer(
     private fun logger(): Logger = LOGGER
 
     @KafkaListener(
-        topics = ["concept-events"],
+        topics = [ArchiveType.TOPIC_CONCEPT],
         groupId = "fdk-harvest-archive",
         containerFactory = "kafkaListenerContainerFactory",
-        id = LISTENER_ID,
+        id = ArchiveType.LISTENER_CONCEPT,
     )
     fun consumeConceptEvent(record: ConsumerRecord<String, Any>, ack: Acknowledgment) {
         logger().debug("Received concept event - offset: {}, partition: {}", record.offset(), record.partition())
@@ -50,6 +50,5 @@ class KafkaConceptEventConsumer(
     companion object {
         private val LOGGER: Logger = LoggerFactory.getLogger(KafkaConceptEventConsumer::class.java)
         private val ARCHIVE_TYPE = ArchiveType.CONCEPT
-        const val LISTENER_ID = "concept-archive"
     }
 }

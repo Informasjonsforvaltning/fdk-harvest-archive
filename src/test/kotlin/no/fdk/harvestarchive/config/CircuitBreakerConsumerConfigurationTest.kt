@@ -6,6 +6,7 @@ import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.mockk.mockk
 import io.mockk.verify
+import no.fdk.harvestarchive.archive.ArchiveType
 import no.fdk.harvestarchive.kafka.KafkaManager
 import no.fdk.harvestarchive.metrics.ArchiveMetrics
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -31,7 +32,7 @@ class CircuitBreakerConsumerConfigurationTest {
 
         val registry = CircuitBreakerRegistry.of(cbConfig)
         HarvestCircuitBreakerConfig(kafkaManager, ArchiveMetrics(SimpleMeterRegistry())).registerListeners(registry)
-        val cb = registry.circuitBreaker(HarvestCircuitBreakerConfig.DATASET_CIRCUIT_BREAKER_ID)
+        val cb = registry.circuitBreaker(ArchiveType.DATASET.circuitBreakerId)
 
         repeat(2) {
             try {
@@ -42,7 +43,7 @@ class CircuitBreakerConsumerConfigurationTest {
         }
 
         assertEquals(CircuitBreaker.State.OPEN, cb.state)
-        verify(exactly = 1) { kafkaManager.pause("dataset-archive") }
+        verify(exactly = 1) { kafkaManager.pause(ArchiveType.DATASET.listenerId) }
     }
 
     @Test
@@ -51,14 +52,14 @@ class CircuitBreakerConsumerConfigurationTest {
 
         val registry = CircuitBreakerRegistry.ofDefaults()
         HarvestCircuitBreakerConfig(kafkaManager, ArchiveMetrics(SimpleMeterRegistry())).registerListeners(registry)
-        val cb = registry.circuitBreaker(HarvestCircuitBreakerConfig.DATASET_CIRCUIT_BREAKER_ID)
+        val cb = registry.circuitBreaker(ArchiveType.DATASET.circuitBreakerId)
 
         cb.transitionToOpenState()
         cb.transitionToHalfOpenState()
         cb.transitionToClosedState()
 
         // OPEN->HALF_OPEN triggers resume, HALF_OPEN->CLOSED triggers resume
-        verify(atLeast = 1) { kafkaManager.resume("dataset-archive") }
+        verify(atLeast = 1) { kafkaManager.resume(ArchiveType.DATASET.listenerId) }
     }
 
     @Test
@@ -75,6 +76,12 @@ class CircuitBreakerConsumerConfigurationTest {
         val eventCb = config.eventArchiveCircuitBreaker(registry)
         val serviceCb = config.serviceArchiveCircuitBreaker(registry)
 
+        assertEquals(ArchiveType.DATASET.circuitBreakerId, datasetCb.name)
+        assertEquals(ArchiveType.CONCEPT.circuitBreakerId, conceptCb.name)
+        assertEquals(ArchiveType.DATA_SERVICE.circuitBreakerId, dataServiceCb.name)
+        assertEquals(ArchiveType.INFORMATION_MODEL.circuitBreakerId, informationModelCb.name)
+        assertEquals(ArchiveType.EVENT.circuitBreakerId, eventCb.name)
+        assertEquals(ArchiveType.SERVICE.circuitBreakerId, serviceCb.name)
         assertEquals(CircuitBreaker.State.CLOSED, datasetCb.state)
         assertEquals(CircuitBreaker.State.CLOSED, conceptCb.state)
         assertEquals(CircuitBreaker.State.CLOSED, dataServiceCb.state)
