@@ -21,7 +21,8 @@ import java.time.Duration
 @Tag("unit")
 class KafkaDatasetEventConsumerTest {
     private val circuitBreaker: KafkaDatasetEventCircuitBreaker = mockk()
-    private val consumer = KafkaDatasetEventConsumer(circuitBreaker, ArchiveMetrics(SimpleMeterRegistry()))
+    private val registry = SimpleMeterRegistry()
+    private val consumer = KafkaDatasetEventConsumer(circuitBreaker, ArchiveMetrics(registry))
     private val ack: Acknowledgment = mockk(relaxed = true)
 
     @Test
@@ -101,6 +102,17 @@ class KafkaDatasetEventConsumerTest {
 
         verify(exactly = 1) { ack.acknowledge() }
         verify(exactly = 0) { ack.nack(any<Duration>()) }
+        assertThat(
+            registry
+                .counter(
+                    "harvest_archive_event_processing_total",
+                    "type",
+                    "datasets",
+                    "result",
+                    "skipped",
+                ).count(),
+        ).isEqualTo(1.0)
+        assertThat(registry.find("harvest_archive_skipped_total").counter()).isNull()
     }
 
     @Test

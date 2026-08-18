@@ -53,17 +53,6 @@ class ArchiveMetrics(private val registry: MeterRegistry) {
             ).increment()
     }
 
-    fun recordSkipped(type: ArchiveType?, reason: SkipReason) {
-        registry
-            .counter(
-                "harvest_archive_skipped_total",
-                "type",
-                type?.metricTag ?: "unknown",
-                "reason",
-                reason.label,
-            ).increment()
-    }
-
     fun recordZip(type: ArchiveType, status: ZipStatus, fileCount: Int, zipBytes: Long, duration: Duration) {
         registry
             .counter(
@@ -135,13 +124,6 @@ class ArchiveMetrics(private val registry: MeterRegistry) {
     private fun dirBytesValue(type: ArchiveType): AtomicLong = dirBytes.computeIfAbsent(type) { AtomicLong(0) }
 
     private fun dirFilesValue(type: ArchiveType): AtomicLong = dirFiles.computeIfAbsent(type) { AtomicLong(0) }
-
-    enum class SkipReason(val label: String) {
-        UNKNOWN_TOPIC("unknown_topic"),
-        MISSING_TYPE("missing_type"),
-        DISALLOWED_TYPE("disallowed_type"),
-        UNSUPPORTED_PAYLOAD("unsupported_payload"),
-    }
 
     enum class ZipStatus(val label: String) {
         SUCCESS("success"),

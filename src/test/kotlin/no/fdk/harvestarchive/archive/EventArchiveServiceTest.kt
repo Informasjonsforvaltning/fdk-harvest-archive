@@ -433,42 +433,6 @@ class EventArchiveServiceTest {
         assertThat(registry.timer("harvest_archive_save_time", "type", "datasets").count()).isEqualTo(1L)
     }
 
-    @Test
-    fun `saveGenericForTopic records skipped metrics for unknown topic and disallowed type`(@TempDir tempDir: Path) {
-        val registry = SimpleMeterRegistry()
-        val service = serviceFor(tempDir, ArchiveMetrics(registry))
-
-        service.saveGenericForTopic(
-            "unknown-topic",
-            mapOf("type" to "DATASET_HARVESTED", "fdkId" to "no-topic", "timestamp" to "1"),
-        )
-        service.saveGenericForTopic(
-            "dataset-events",
-            mapOf("type" to "DATASET_REASONED", "fdkId" to "skip-me", "timestamp" to "1"),
-        )
-
-        assertThat(
-            registry
-                .counter(
-                    "harvest_archive_skipped_total",
-                    "type",
-                    "unknown",
-                    "reason",
-                    "unknown_topic",
-                ).count(),
-        ).isEqualTo(1.0)
-        assertThat(
-            registry
-                .counter(
-                    "harvest_archive_skipped_total",
-                    "type",
-                    "datasets",
-                    "reason",
-                    "disallowed_type",
-                ).count(),
-        ).isEqualTo(1.0)
-    }
-
     private fun serviceFor(tempDir: Path, archiveMetrics: ArchiveMetrics = ArchiveMetrics(SimpleMeterRegistry())) = EventArchiveService(
         datasetDir = tempDir.resolve("datasets").toString(),
         conceptDir = tempDir.resolve("concepts").toString(),

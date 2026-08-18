@@ -60,35 +60,6 @@ class ArchiveMetricsTest {
     }
 
     @Test
-    fun `recordSkipped increments skipped counter with reason`() {
-        metrics.recordSkipped(ArchiveType.DATASET, ArchiveMetrics.SkipReason.DISALLOWED_TYPE)
-        metrics.recordSkipped(null, ArchiveMetrics.SkipReason.UNKNOWN_TOPIC)
-
-        assertEquals(
-            1.0,
-            registry
-                .counter(
-                    "harvest_archive_skipped_total",
-                    "type",
-                    "datasets",
-                    "reason",
-                    "disallowed_type",
-                ).count(),
-        )
-        assertEquals(
-            1.0,
-            registry
-                .counter(
-                    "harvest_archive_skipped_total",
-                    "type",
-                    "unknown",
-                    "reason",
-                    "unknown_topic",
-                ).count(),
-        )
-    }
-
-    @Test
     fun `recordZip increments zip counters and summaries`() {
         metrics.recordZip(ArchiveType.SERVICE, ArchiveMetrics.ZipStatus.SUCCESS, 3, 256, 20.milliseconds)
 

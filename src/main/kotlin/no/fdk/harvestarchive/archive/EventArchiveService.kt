@@ -7,7 +7,6 @@ import no.fdk.dataset.DatasetEvent
 import no.fdk.event.EventEvent
 import no.fdk.harvestarchive.kafka.ProcessOutcome
 import no.fdk.harvestarchive.metrics.ArchiveMetrics
-import no.fdk.harvestarchive.metrics.ArchiveMetrics.SkipReason
 import no.fdk.informationmodel.InformationModelEvent
 import no.fdk.service.ServiceEvent
 import org.slf4j.Logger
@@ -51,17 +50,14 @@ class EventArchiveService(
     fun saveGenericForTopic(topic: String, payload: Map<String, Any?>): ProcessOutcome {
         val archiveType = ArchiveType.fromTopic(topic)
         if (archiveType == null) {
-            archiveMetrics.recordSkipped(null, SkipReason.UNKNOWN_TOPIC)
             return ProcessOutcome.Skipped(null)
         }
         val eventType = payload["type"]?.toString()
         if (eventType == null) {
-            archiveMetrics.recordSkipped(archiveType, SkipReason.MISSING_TYPE)
             return ProcessOutcome.Skipped(archiveType)
         }
         if (!archiveType.allowsEventType(eventType)) {
             LOGGER.debug("Skipping generic event with type {} for topic {}", eventType, topic)
-            archiveMetrics.recordSkipped(archiveType, SkipReason.DISALLOWED_TYPE)
             return ProcessOutcome.Skipped(archiveType)
         }
         savePayload(archiveType, payload)
