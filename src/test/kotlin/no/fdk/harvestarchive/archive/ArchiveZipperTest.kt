@@ -3,12 +3,15 @@ package no.fdk.harvestarchive.archive
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import no.fdk.harvestarchive.metrics.ArchiveMetrics
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
+import java.nio.file.FileSystems
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.attribute.PosixFilePermissions
 
 @Tag("unit")
 class ArchiveZipperTest {
@@ -21,15 +24,15 @@ class ArchiveZipperTest {
         archiveMetrics = ArchiveMetrics(registry)
     }
 
-    private fun zipperFor(tempDir: Path) = ArchiveZipper(
+    private fun zipperFor(tempDir: Path, zipThresholdBytes: Long = 10L * 1024 * 1024 * 1024, zipMaxFileCount: Int = 2000) = ArchiveZipper(
         datasetDir = tempDir.resolve("datasets").toString(),
         conceptDir = tempDir.resolve("concepts").toString(),
         dataServiceDir = tempDir.resolve("data_services").toString(),
         informationModelDir = tempDir.resolve("information_models").toString(),
         eventDir = tempDir.resolve("events").toString(),
         serviceDir = tempDir.resolve("services").toString(),
-        zipThresholdBytes = 10L * 1024 * 1024 * 1024,
-        zipMaxFileCount = 2000,
+        zipThresholdBytes = zipThresholdBytes,
+        zipMaxFileCount = zipMaxFileCount,
         archiveMetrics = archiveMetrics,
     )
 
@@ -154,5 +157,63 @@ class ArchiveZipperTest {
         assertThat(
             registry.find("harvest_archive_dir_files").tag("type", "datasets").gauge()?.value(),
         ).isEqualTo(3.0)
+    }
+
+    @Test
+    fun `checkAndZipAll zips existing dirs over threshold and skips missing dirs`(@TempDir tempDir: Path) {
+        val datasetDir = tempDir.resolve("datasets")
+        val conceptDir = tempDir.resolve("concepts")
+        Files.createDirectories(datasetDir)
+        Files.createDirectories(conceptDir)
+        Files.writeString(datasetDir.resolve("1_abc.json"), """{"type":"DATASET_HARVESTED"}""")
+        Files.writeString(conceptDir.resolve("1_def.json"), """{"type":"CONCEPT_HARVESTED"}""")
+
+        zipperFor(tempDir, zipThresholdBytes = 1L).checkAndZipAll()
+
+        assertThat(Files.list(datasetDir).use { it.toList() }).isEmpty()
+        assertThat(Files.list(conceptDir).use { it.toList() }).isEmpty()
+        val zips = Files.list(tempDir).use { paths -> paths.filter { it.fileName.toString().endsWith(".zip") }.toList() }
+        assertThat(zips).hasSize(2)
+        assertThat(
+            registry.counter("harvest_archive_zip_total", "type", "datasets", "status", "success").count(),
+        ).isEqualTo(1.0)
+        assertThat(
+            registry.counter("harvest_archive_zip_total", "type", "concepts", "status", "success").count(),
+        ).isEqualTo(1.0)
+        assertThat(registry.find("harvest_archive_zip_total").tag("type", "services").counter()).isNull()
+    }
+
+    @Test
+    fun `zipIfOverThreshold records zip error metrics when reading a file fails`(@TempDir tempDir: Path) {
+        assumeTrue(FileSystems.getDefault().supportedFileAttributeViews().contains("posix"))
+
+        val datasetDir = tempDir.resolve("datasets")
+        Files.createDirectories(datasetDir)
+        val source = datasetDir.resolve("1_abc.json")
+        Files.writeString(source, """{"type":"DATASET_HARVESTED"}""")
+        Files.setPosixFilePermissions(source, PosixFilePermissions.fromString("---------"))
+
+        try {
+            zipperFor(tempDir).zipIfOverThreshold(ArchiveType.DATASET, datasetDir, thresholdBytes = 1L)
+        } finally {
+            Files.setPosixFilePermissions(source, PosixFilePermissions.fromString("rw-r--r--"))
+        }
+
+        assertThat(Files.exists(source)).isTrue()
+        assertThat(
+            registry.counter("harvest_archive_zip_total", "type", "datasets", "status", "error").count(),
+        ).isEqualTo(1.0)
+        assertThat(
+            registry.timer("harvest_archive_zip_time", "type", "datasets", "status", "error").count(),
+        ).isEqualTo(1L)
+        assertThat(
+            registry.find("harvest_archive_zip_total").tag("type", "datasets").tag("status", "success").counter()?.count() ?: 0.0,
+        ).isEqualTo(0.0)
+        assertThat(
+            registry.find("harvest_archive_zip_files").tag("type", "datasets").summary()?.totalAmount() ?: 0.0,
+        ).isEqualTo(0.0)
+        assertThat(
+            registry.find("harvest_archive_dir_files").tag("type", "datasets").gauge()?.value(),
+        ).isEqualTo(1.0)
     }
 }

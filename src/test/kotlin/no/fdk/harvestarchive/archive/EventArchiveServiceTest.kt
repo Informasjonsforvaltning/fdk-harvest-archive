@@ -17,6 +17,7 @@ import no.fdk.informationmodel.InformationModelEventType
 import no.fdk.service.ServiceEvent
 import no.fdk.service.ServiceEventType
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -431,6 +432,42 @@ class EventArchiveServiceTest {
                 ).count(),
         ).isEqualTo(1.0)
         assertThat(registry.timer("harvest_archive_save_time", "type", "datasets").count()).isEqualTo(1L)
+    }
+
+    @Test
+    fun `saveDataset records save error metrics and rethrows when write fails`(@TempDir tempDir: Path) {
+        val registry = SimpleMeterRegistry()
+        Files.writeString(tempDir.resolve("datasets"), "not-a-directory")
+        val service = serviceFor(tempDir, ArchiveMetrics(registry))
+
+        assertThatThrownBy {
+            service.saveDataset(
+                DatasetEvent
+                    .newBuilder()
+                    .setType(DatasetEventType.DATASET_REMOVED)
+                    .setFdkId("fail-id")
+                    .setGraph("")
+                    .setTimestamp(1L)
+                    .build(),
+            )
+        }.isInstanceOf(Exception::class.java)
+
+        assertThat(
+            registry
+                .counter(
+                    "harvest_archive_files_saved_total",
+                    "type",
+                    "datasets",
+                    "event_type",
+                    "removed",
+                    "status",
+                    "error",
+                ).count(),
+        ).isEqualTo(1.0)
+        assertThat(
+            registry.find("harvest_archive_files_saved_total").tag("status", "success").counter()?.count() ?: 0.0,
+        ).isEqualTo(0.0)
+        assertThat(registry.find("harvest_archive_save_time").timer()?.count() ?: 0L).isEqualTo(0L)
     }
 
     private fun serviceFor(tempDir: Path, archiveMetrics: ArchiveMetrics = ArchiveMetrics(SimpleMeterRegistry())) = EventArchiveService(
