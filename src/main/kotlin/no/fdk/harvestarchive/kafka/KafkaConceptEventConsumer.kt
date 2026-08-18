@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component
 
 @Component
 class KafkaConceptEventConsumer(
-    @param:Qualifier("kafkaConceptEventCircuitBreaker")
+    @Qualifier("kafkaConceptEventCircuitBreaker")
     circuitBreaker: KafkaCircuitBreakerApi,
     archiveMetrics: ArchiveMetrics,
 ) {
