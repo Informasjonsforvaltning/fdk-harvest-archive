@@ -1,6 +1,7 @@
 package no.fdk.harvestarchive.archive
 
 import com.fasterxml.jackson.module.kotlin.readValue
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import no.fdk.concept.ConceptEvent
 import no.fdk.concept.ConceptEventType
 import no.fdk.dataservice.DataServiceEvent
@@ -9,6 +10,7 @@ import no.fdk.dataset.DatasetEvent
 import no.fdk.dataset.DatasetEventType
 import no.fdk.event.EventEvent
 import no.fdk.event.EventEventType
+import no.fdk.harvestarchive.metrics.ArchiveMetrics
 import no.fdk.informationmodel.InformationModelEvent
 import no.fdk.informationmodel.InformationModelEventType
 import no.fdk.service.ServiceEvent
@@ -430,4 +432,81 @@ class EventArchiveServiceTest {
 
         assertThat(zipFiles).isNotEmpty()
     }
+
+    @Test
+    fun `saveDataset records saved file metrics`(@TempDir tempDir: Path) {
+        val registry = SimpleMeterRegistry()
+        ArchiveMetrics.bind(registry)
+        val service = serviceFor(tempDir)
+
+        service.saveDataset(
+            DatasetEvent
+                .newBuilder()
+                .setType(DatasetEventType.DATASET_HARVESTED)
+                .setFdkId("metrics-dataset")
+                .setGraph("")
+                .setTimestamp(1L)
+                .build(),
+        )
+
+        assertThat(
+            registry
+                .counter(
+                    "harvest_archive_files_saved_total",
+                    "type",
+                    "datasets",
+                    "event_type",
+                    "harvested",
+                    "status",
+                    "success",
+                ).count(),
+        ).isEqualTo(1.0)
+        assertThat(registry.timer("harvest_archive_save_time", "type", "datasets").count()).isEqualTo(1L)
+    }
+
+    @Test
+    fun `saveGenericForTopic records skipped metrics for unknown topic and disallowed type`(@TempDir tempDir: Path) {
+        val registry = SimpleMeterRegistry()
+        ArchiveMetrics.bind(registry)
+        val service = serviceFor(tempDir)
+
+        service.saveGenericForTopic(
+            "unknown-topic",
+            mapOf("type" to "DATASET_HARVESTED", "fdkId" to "no-topic", "timestamp" to "1"),
+        )
+        service.saveGenericForTopic(
+            "dataset-events",
+            mapOf("type" to "DATASET_REASONED", "fdkId" to "skip-me", "timestamp" to "1"),
+        )
+
+        assertThat(
+            registry
+                .counter(
+                    "harvest_archive_skipped_total",
+                    "type",
+                    "unknown",
+                    "reason",
+                    "unknown_topic",
+                ).count(),
+        ).isEqualTo(1.0)
+        assertThat(
+            registry
+                .counter(
+                    "harvest_archive_skipped_total",
+                    "type",
+                    "datasets",
+                    "reason",
+                    "disallowed_type",
+                ).count(),
+        ).isEqualTo(1.0)
+    }
+
+    private fun serviceFor(tempDir: Path) = EventArchiveService(
+        datasetDir = tempDir.resolve("datasets").toString(),
+        conceptDir = tempDir.resolve("concepts").toString(),
+        dataServiceDir = tempDir.resolve("data_services").toString(),
+        informationModelDir = tempDir.resolve("information_models").toString(),
+        eventDir = tempDir.resolve("events").toString(),
+        serviceDir = tempDir.resolve("services").toString(),
+    )
 }
