@@ -29,8 +29,8 @@ private const val EVENT_LISTENER = "event-archive"
 private const val SERVICE_LISTENER = "service-archive"
 
 /**
- * Canonical mapping for each harvest archive resource type: Kafka topic, archive directory,
- * allowed event types, circuit breaker id, listener id, and Prometheus metric tag.
+ * Canonical mapping for each harvest archive resource type: Kafka topic, allowed event types,
+ * circuit breaker id, listener id, and Prometheus metric tag.
  */
 enum class ArchiveType(
     val metricTag: String,

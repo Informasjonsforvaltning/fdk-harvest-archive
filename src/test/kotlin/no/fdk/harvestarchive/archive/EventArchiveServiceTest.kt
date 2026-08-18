@@ -27,16 +27,7 @@ import java.nio.file.Path
 class EventArchiveServiceTest {
     @Test
     fun `saveDataset creates directory and writes JSON file`(@TempDir tempDir: Path) {
-        val service =
-            EventArchiveService(
-                datasetDir = tempDir.resolve("datasets").toString(),
-                conceptDir = tempDir.resolve("concepts").toString(),
-                dataServiceDir = tempDir.resolve("data_services").toString(),
-                informationModelDir = tempDir.resolve("information_models").toString(),
-                eventDir = tempDir.resolve("events").toString(),
-                serviceDir = tempDir.resolve("services").toString(),
-                archiveMetrics = ArchiveMetrics(SimpleMeterRegistry()),
-            )
+        val service = serviceFor(tempDir)
         val event =
             DatasetEvent
                 .newBuilder()
@@ -64,16 +55,7 @@ class EventArchiveServiceTest {
     @Test
     fun `saveDataset creates subdirectory when path has multiple segments`(@TempDir tempDir: Path) {
         val datasetDir = tempDir.resolve("datasets").toString()
-        val service =
-            EventArchiveService(
-                datasetDir = datasetDir,
-                conceptDir = tempDir.resolve("concepts").toString(),
-                dataServiceDir = tempDir.resolve("data_services").toString(),
-                informationModelDir = tempDir.resolve("information_models").toString(),
-                eventDir = tempDir.resolve("events").toString(),
-                serviceDir = tempDir.resolve("services").toString(),
-                archiveMetrics = ArchiveMetrics(SimpleMeterRegistry()),
-            )
+        val service = serviceFor(tempDir)
         val event =
             DatasetEvent
                 .newBuilder()
@@ -92,16 +74,7 @@ class EventArchiveServiceTest {
 
     @Test
     fun `saveDataset writes valid JSON that can be read back`(@TempDir tempDir: Path) {
-        val service =
-            EventArchiveService(
-                datasetDir = tempDir.resolve("datasets").toString(),
-                conceptDir = tempDir.resolve("concepts").toString(),
-                dataServiceDir = tempDir.resolve("data_services").toString(),
-                informationModelDir = tempDir.resolve("information_models").toString(),
-                eventDir = tempDir.resolve("events").toString(),
-                serviceDir = tempDir.resolve("services").toString(),
-                archiveMetrics = ArchiveMetrics(SimpleMeterRegistry()),
-            )
+        val service = serviceFor(tempDir)
         val objectMapper =
             com.fasterxml.jackson.module.kotlin
                 .jacksonObjectMapper()
@@ -126,16 +99,7 @@ class EventArchiveServiceTest {
     @Test
     fun `saveConcept writes concept event JSON to concept directory`(@TempDir tempDir: Path) {
         val conceptDir = tempDir.resolve("concepts").toString()
-        val service =
-            EventArchiveService(
-                datasetDir = tempDir.resolve("datasets").toString(),
-                conceptDir = conceptDir,
-                dataServiceDir = tempDir.resolve("data_services").toString(),
-                informationModelDir = tempDir.resolve("information_models").toString(),
-                eventDir = tempDir.resolve("events").toString(),
-                serviceDir = tempDir.resolve("services").toString(),
-                archiveMetrics = ArchiveMetrics(SimpleMeterRegistry()),
-            )
+        val service = serviceFor(tempDir)
         val event =
             ConceptEvent
                 .newBuilder()
@@ -158,16 +122,7 @@ class EventArchiveServiceTest {
     @Test
     fun `saveDataService writes data service event JSON to data service directory`(@TempDir tempDir: Path) {
         val dataServiceDir = tempDir.resolve("data_services").toString()
-        val service =
-            EventArchiveService(
-                datasetDir = tempDir.resolve("datasets").toString(),
-                conceptDir = tempDir.resolve("concepts").toString(),
-                dataServiceDir = dataServiceDir,
-                informationModelDir = tempDir.resolve("information_models").toString(),
-                eventDir = tempDir.resolve("events").toString(),
-                serviceDir = tempDir.resolve("services").toString(),
-                archiveMetrics = ArchiveMetrics(SimpleMeterRegistry()),
-            )
+        val service = serviceFor(tempDir)
         val event =
             DataServiceEvent
                 .newBuilder()
@@ -190,16 +145,7 @@ class EventArchiveServiceTest {
     @Test
     fun `saveInformationModel writes information model event JSON to information model directory`(@TempDir tempDir: Path) {
         val informationModelDir = tempDir.resolve("information_models").toString()
-        val service =
-            EventArchiveService(
-                datasetDir = tempDir.resolve("datasets").toString(),
-                conceptDir = tempDir.resolve("concepts").toString(),
-                dataServiceDir = tempDir.resolve("data_services").toString(),
-                informationModelDir = informationModelDir,
-                eventDir = tempDir.resolve("events").toString(),
-                serviceDir = tempDir.resolve("services").toString(),
-                archiveMetrics = ArchiveMetrics(SimpleMeterRegistry()),
-            )
+        val service = serviceFor(tempDir)
         val event =
             InformationModelEvent
                 .newBuilder()
@@ -222,16 +168,7 @@ class EventArchiveServiceTest {
     @Test
     fun `saveEvent writes event event JSON to event directory`(@TempDir tempDir: Path) {
         val eventDir = tempDir.resolve("events").toString()
-        val service =
-            EventArchiveService(
-                datasetDir = tempDir.resolve("datasets").toString(),
-                conceptDir = tempDir.resolve("concepts").toString(),
-                dataServiceDir = tempDir.resolve("data_services").toString(),
-                informationModelDir = tempDir.resolve("information_models").toString(),
-                eventDir = eventDir,
-                serviceDir = tempDir.resolve("services").toString(),
-                archiveMetrics = ArchiveMetrics(SimpleMeterRegistry()),
-            )
+        val service = serviceFor(tempDir)
         val event =
             EventEvent
                 .newBuilder()
@@ -254,16 +191,7 @@ class EventArchiveServiceTest {
     @Test
     fun `saveService writes service event JSON to service directory`(@TempDir tempDir: Path) {
         val serviceDir = tempDir.resolve("services").toString()
-        val service =
-            EventArchiveService(
-                datasetDir = tempDir.resolve("datasets").toString(),
-                conceptDir = tempDir.resolve("concepts").toString(),
-                dataServiceDir = tempDir.resolve("data_services").toString(),
-                informationModelDir = tempDir.resolve("information_models").toString(),
-                eventDir = tempDir.resolve("events").toString(),
-                serviceDir = serviceDir,
-                archiveMetrics = ArchiveMetrics(SimpleMeterRegistry()),
-            )
+        val service = serviceFor(tempDir)
         val event =
             ServiceEvent
                 .newBuilder()
@@ -286,16 +214,7 @@ class EventArchiveServiceTest {
     @Test
     fun `saveGenericForTopic writes JSON file when topic and type are allowed`(@TempDir tempDir: Path) {
         val datasetDir = tempDir.resolve("datasets").toString()
-        val service =
-            EventArchiveService(
-                datasetDir = datasetDir,
-                conceptDir = tempDir.resolve("concepts").toString(),
-                dataServiceDir = tempDir.resolve("data_services").toString(),
-                informationModelDir = tempDir.resolve("information_models").toString(),
-                eventDir = tempDir.resolve("events").toString(),
-                serviceDir = tempDir.resolve("services").toString(),
-                archiveMetrics = ArchiveMetrics(SimpleMeterRegistry()),
-            )
+        val service = serviceFor(tempDir)
         val payload =
             mapOf<String, Any?>(
                 "type" to "DATASET_HARVESTED",
@@ -321,16 +240,7 @@ class EventArchiveServiceTest {
     @Test
     fun `saveGenericForTopic writes to correct directory per topic`(@TempDir tempDir: Path) {
         val conceptDir = tempDir.resolve("concepts").toString()
-        val service =
-            EventArchiveService(
-                datasetDir = tempDir.resolve("datasets").toString(),
-                conceptDir = conceptDir,
-                dataServiceDir = tempDir.resolve("data_services").toString(),
-                informationModelDir = tempDir.resolve("information_models").toString(),
-                eventDir = tempDir.resolve("events").toString(),
-                serviceDir = tempDir.resolve("services").toString(),
-                archiveMetrics = ArchiveMetrics(SimpleMeterRegistry()),
-            )
+        val service = serviceFor(tempDir)
         val payload =
             mapOf<String, Any?>(
                 "type" to "CONCEPT_REMOVED",
@@ -352,16 +262,7 @@ class EventArchiveServiceTest {
     @Test
     fun `saveGenericForTopic does not write when event type is not allowed for topic`(@TempDir tempDir: Path) {
         val datasetDir = tempDir.resolve("datasets").toString()
-        val service =
-            EventArchiveService(
-                datasetDir = datasetDir,
-                conceptDir = tempDir.resolve("concepts").toString(),
-                dataServiceDir = tempDir.resolve("data_services").toString(),
-                informationModelDir = tempDir.resolve("information_models").toString(),
-                eventDir = tempDir.resolve("events").toString(),
-                serviceDir = tempDir.resolve("services").toString(),
-                archiveMetrics = ArchiveMetrics(SimpleMeterRegistry()),
-            )
+        val service = serviceFor(tempDir)
         val payload =
             mapOf<String, Any?>(
                 "type" to "DATASET_REASONED",
@@ -379,16 +280,7 @@ class EventArchiveServiceTest {
     @Test
     fun `saveGenericForTopic does not write when topic is unknown`(@TempDir tempDir: Path) {
         val datasetDir = tempDir.resolve("datasets").toString()
-        val service =
-            EventArchiveService(
-                datasetDir = datasetDir,
-                conceptDir = tempDir.resolve("concepts").toString(),
-                dataServiceDir = tempDir.resolve("data_services").toString(),
-                informationModelDir = tempDir.resolve("information_models").toString(),
-                eventDir = tempDir.resolve("events").toString(),
-                serviceDir = tempDir.resolve("services").toString(),
-                archiveMetrics = ArchiveMetrics(SimpleMeterRegistry()),
-            )
+        val service = serviceFor(tempDir)
         val payload =
             mapOf<String, Any?>(
                 "type" to "DATASET_HARVESTED",
@@ -469,13 +361,6 @@ class EventArchiveServiceTest {
         assertThat(registry.find("harvest_archive_save_time").timer()?.count() ?: 0L).isEqualTo(0L)
     }
 
-    private fun serviceFor(tempDir: Path, archiveMetrics: ArchiveMetrics = ArchiveMetrics(SimpleMeterRegistry())) = EventArchiveService(
-        datasetDir = tempDir.resolve("datasets").toString(),
-        conceptDir = tempDir.resolve("concepts").toString(),
-        dataServiceDir = tempDir.resolve("data_services").toString(),
-        informationModelDir = tempDir.resolve("information_models").toString(),
-        eventDir = tempDir.resolve("events").toString(),
-        serviceDir = tempDir.resolve("services").toString(),
-        archiveMetrics = archiveMetrics,
-    )
+    private fun serviceFor(tempDir: Path, archiveMetrics: ArchiveMetrics = ArchiveMetrics(SimpleMeterRegistry())) =
+        EventArchiveService(archiveDirectories(tempDir), archiveMetrics)
 }

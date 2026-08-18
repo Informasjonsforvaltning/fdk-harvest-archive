@@ -25,12 +25,7 @@ class ArchiveZipperTest {
     }
 
     private fun zipperFor(tempDir: Path, zipThresholdBytes: Long = 10L * 1024 * 1024 * 1024, zipMaxFileCount: Int = 2000) = ArchiveZipper(
-        datasetDir = tempDir.resolve("datasets").toString(),
-        conceptDir = tempDir.resolve("concepts").toString(),
-        dataServiceDir = tempDir.resolve("data_services").toString(),
-        informationModelDir = tempDir.resolve("information_models").toString(),
-        eventDir = tempDir.resolve("events").toString(),
-        serviceDir = tempDir.resolve("services").toString(),
+        archiveDirectories = archiveDirectories(tempDir),
         zipThresholdBytes = zipThresholdBytes,
         zipMaxFileCount = zipMaxFileCount,
         archiveMetrics = archiveMetrics,

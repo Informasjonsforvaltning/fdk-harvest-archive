@@ -10,7 +10,6 @@ import no.fdk.informationmodel.InformationModelEvent
 import no.fdk.service.ServiceEvent
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -22,26 +21,8 @@ import kotlin.time.measureTimedValue
  * Each event is written as `{timestamp}_{fdkId}.json` with type, harvestRunId, uri, fdkId, graph, and timestamp.
  */
 @Service
-class EventArchiveService(
-    @param:Value($$"${app.archive.dataset-dir}") private val datasetDir: String,
-    @param:Value($$"${app.archive.concept-dir}") private val conceptDir: String,
-    @param:Value($$"${app.archive.data-service-dir}") private val dataServiceDir: String,
-    @param:Value($$"${app.archive.information-model-dir}") private val informationModelDir: String,
-    @param:Value($$"${app.archive.event-dir}") private val eventDir: String,
-    @param:Value($$"${app.archive.service-dir}") private val serviceDir: String,
-    private val archiveMetrics: ArchiveMetrics,
-) {
+class EventArchiveService(private val archiveDirectories: ArchiveDirectories, private val archiveMetrics: ArchiveMetrics) {
     private val objectMapper = jacksonObjectMapper()
-
-    private val archiveTypeToDir: Map<ArchiveType, String> =
-        mapOf(
-            ArchiveType.DATASET to datasetDir,
-            ArchiveType.CONCEPT to conceptDir,
-            ArchiveType.DATA_SERVICE to dataServiceDir,
-            ArchiveType.INFORMATION_MODEL to informationModelDir,
-            ArchiveType.EVENT to eventDir,
-            ArchiveType.SERVICE to serviceDir,
-        )
 
     /**
      * Saves a generic (map) payload to the directory for the given topic, only if the event type is HARVESTED or REMOVED for that topic.
@@ -169,7 +150,7 @@ class EventArchiveService(
         val eventType = payload["type"]?.toString() ?: "unknown"
         val filename = "${payload["timestamp"]}_${payload["fdkId"]}.json"
         try {
-            val result = saveAsFile(archiveTypeToDir.getValue(archiveType), filename, payload)
+            val result = saveAsFile(archiveDirectories[archiveType], filename, payload)
             archiveMetrics.recordSaved(archiveType, eventType, result.bytes, result.duration)
             LOGGER.debug("Event saved to {}", filename)
         } catch (e: Exception) {

@@ -18,29 +18,14 @@ import kotlin.time.measureTimedValue
  */
 @Component
 class ArchiveZipper(
-    @param:Value("\${app.archive.dataset-dir}") private val datasetDir: String,
-    @param:Value("\${app.archive.concept-dir}") private val conceptDir: String,
-    @param:Value("\${app.archive.data-service-dir}") private val dataServiceDir: String,
-    @param:Value("\${app.archive.information-model-dir}") private val informationModelDir: String,
-    @param:Value("\${app.archive.event-dir}") private val eventDir: String,
-    @param:Value("\${app.archive.service-dir}") private val serviceDir: String,
+    private val archiveDirectories: ArchiveDirectories,
     @param:Value("\${app.archive.zip-threshold-bytes}") private val zipThresholdBytes: Long,
     @param:Value("\${app.archive.zip-max-file-count}") private val zipMaxFileCount: Int,
     private val archiveMetrics: ArchiveMetrics,
 ) {
-    private val archiveTypeToDir: Map<ArchiveType, String> =
-        mapOf(
-            ArchiveType.DATASET to datasetDir,
-            ArchiveType.CONCEPT to conceptDir,
-            ArchiveType.DATA_SERVICE to dataServiceDir,
-            ArchiveType.INFORMATION_MODEL to informationModelDir,
-            ArchiveType.EVENT to eventDir,
-            ArchiveType.SERVICE to serviceDir,
-        )
-
     @Scheduled(fixedDelayString = "\${app.archive.zip-check-interval-ms}")
     fun checkAndZipAll() {
-        archiveTypeToDir.forEach { (archiveType, dir) ->
+        archiveDirectories.forEach { archiveType, dir ->
             val dirPath = Paths.get(dir)
             if (Files.exists(dirPath)) {
                 zipIfOverThreshold(archiveType, dirPath)
