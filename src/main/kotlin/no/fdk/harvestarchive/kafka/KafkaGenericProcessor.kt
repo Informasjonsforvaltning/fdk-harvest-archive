@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component
 
 @Component
 open class KafkaGenericProcessor(private val eventArchiveService: EventArchiveService) {
-    fun process(event: GenericRecord, topic: String) {
+    fun process(event: GenericRecord, topic: String): ProcessOutcome {
         try {
             val payload =
                 mapOf<String, Any?>(
@@ -19,7 +19,7 @@ open class KafkaGenericProcessor(private val eventArchiveService: EventArchiveSe
                     "graph" to event.get("graph")?.toString(),
                     "timestamp" to event.get("timestamp")?.toString(),
                 )
-            eventArchiveService.saveGenericForTopic(topic, payload)
+            return eventArchiveService.saveGenericForTopic(topic, payload)
         } catch (e: Exception) {
             LOGGER.error("Error processing generic record with fdkId: {} and type: {}", event.get("fdkId"), event.get("type"), e)
             throw e

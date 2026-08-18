@@ -8,6 +8,7 @@ import no.fdk.dataset.DatasetEvent
 import no.fdk.dataset.DatasetEventType
 import no.fdk.harvestarchive.archive.ArchiveType
 import no.fdk.harvestarchive.archive.EventArchiveService
+import org.apache.avro.generic.GenericRecord
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Tag
@@ -98,5 +99,30 @@ class KafkaDatasetEventCircuitBreakerTest {
         assertThat(outcome).isEqualTo(ProcessOutcome.Skipped(ArchiveType.DATASET))
         verify(exactly = 0) { eventArchiveService.saveDataset(any()) }
         verify(exactly = 0) { genericProcessor.process(any(), any()) }
+    }
+
+    @Test
+    fun `generic DATASET_REASONED record returns Skipped not Saved`() {
+        val genericRecord = mockk<GenericRecord>(relaxed = true)
+        every { genericRecord.get("type") } returns DatasetEventType.DATASET_REASONED.name
+        every { genericRecord.get("fdkId") } returns "test-dataset-123"
+        every { genericRecord.get("timestamp") } returns 123L
+        every { eventArchiveService.saveGenericForTopic(any(), any()) } returns ProcessOutcome.Skipped(ArchiveType.DATASET)
+
+        val processor = KafkaGenericProcessor(eventArchiveService)
+        val breaker = KafkaDatasetEventCircuitBreaker(eventArchiveService, processor, circuitBreakerRegistration)
+        val record =
+            org.apache.kafka.clients.consumer.ConsumerRecord<String, Any>(
+                "dataset-events",
+                0,
+                0L,
+                "key",
+                genericRecord,
+            )
+
+        val outcome = breaker.process(record)
+
+        assertThat(outcome).isEqualTo(ProcessOutcome.Skipped(ArchiveType.DATASET))
+        verify(exactly = 0) { eventArchiveService.saveDataset(any()) }
     }
 }

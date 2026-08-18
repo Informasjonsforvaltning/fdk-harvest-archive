@@ -10,6 +10,7 @@ import no.fdk.dataset.DatasetEvent
 import no.fdk.dataset.DatasetEventType
 import no.fdk.event.EventEvent
 import no.fdk.event.EventEventType
+import no.fdk.harvestarchive.kafka.ProcessOutcome
 import no.fdk.harvestarchive.metrics.ArchiveMetrics
 import no.fdk.informationmodel.InformationModelEvent
 import no.fdk.informationmodel.InformationModelEventType
@@ -296,8 +297,9 @@ class EventArchiveServiceTest {
                 "timestamp" to "1700000000000",
             )
 
-        service.saveGenericForTopic("dataset-events", payload)
+        val outcome = service.saveGenericForTopic("dataset-events", payload)
 
+        assertThat(outcome).isEqualTo(ProcessOutcome.Saved(ArchiveType.DATASET))
         val expectedFile = Path.of(datasetDir).resolve("1700000000000_generic-dataset-1.json")
         assertThat(expectedFile).exists().isRegularFile
         val content = expectedFile.toFile().readText()
@@ -329,8 +331,9 @@ class EventArchiveServiceTest {
                 "timestamp" to "99",
             )
 
-        service.saveGenericForTopic("concept-events", payload)
+        val outcome = service.saveGenericForTopic("concept-events", payload)
 
+        assertThat(outcome).isEqualTo(ProcessOutcome.Saved(ArchiveType.CONCEPT))
         val expectedFile = Path.of(conceptDir).resolve("99_concept-generic-1.json")
         assertThat(expectedFile).exists().isRegularFile
         assertThat(expectedFile.toFile().readText()).contains("CONCEPT_REMOVED").contains("concept-generic-1")
@@ -355,8 +358,9 @@ class EventArchiveServiceTest {
                 "timestamp" to "1",
             )
 
-        service.saveGenericForTopic("dataset-events", payload)
+        val outcome = service.saveGenericForTopic("dataset-events", payload)
 
+        assertThat(outcome).isEqualTo(ProcessOutcome.Skipped(ArchiveType.DATASET))
         val expectedFile = Path.of(datasetDir).resolve("1_skip-me.json")
         assertThat(expectedFile).doesNotExist()
     }
@@ -380,8 +384,9 @@ class EventArchiveServiceTest {
                 "timestamp" to "1",
             )
 
-        service.saveGenericForTopic("unknown-topic", payload)
+        val outcome = service.saveGenericForTopic("unknown-topic", payload)
 
+        assertThat(outcome).isEqualTo(ProcessOutcome.Skipped(null))
         val wouldBeFile = Path.of(datasetDir).resolve("1_no-topic.json")
         assertThat(wouldBeFile).doesNotExist()
     }

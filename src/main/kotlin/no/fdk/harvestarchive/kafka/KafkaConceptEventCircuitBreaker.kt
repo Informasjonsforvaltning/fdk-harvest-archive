@@ -32,10 +32,7 @@ open class KafkaConceptEventCircuitBreaker(
                         ProcessOutcome.Saved(ARCHIVE_TYPE)
                     }
 
-                    is GenericRecord -> {
-                        genericProcessor.process(value, TOPIC)
-                        ProcessOutcome.Saved(ARCHIVE_TYPE)
-                    }
+                    is GenericRecord -> genericProcessor.process(value, TOPIC)
 
                     else -> {
                         LOGGER.warn(
