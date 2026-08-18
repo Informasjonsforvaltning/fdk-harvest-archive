@@ -4,7 +4,6 @@ import io.github.resilience4j.circuitbreaker.CircuitBreaker
 import no.fdk.harvestarchive.archive.ArchiveType
 import no.fdk.harvestarchive.archive.EventArchiveService
 import no.fdk.informationmodel.InformationModelEvent
-import no.fdk.informationmodel.InformationModelEventType
 import org.apache.avro.generic.GenericRecord
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.slf4j.Logger
@@ -23,9 +22,7 @@ open class KafkaInformationModelEventCircuitBreaker(
         try {
             when (val value = record.value()) {
                 is InformationModelEvent -> {
-                    if (value.type != InformationModelEventType.INFORMATION_MODEL_HARVESTED &&
-                        value.type != InformationModelEventType.INFORMATION_MODEL_REMOVED
-                    ) {
+                    if (!ARCHIVE_TYPE.allowsEventType(value.type.name)) {
                         LOGGER.debug("Skipping information model event with type {}.", value.type)
                         return@executeCallable ProcessOutcome.Skipped(ARCHIVE_TYPE)
                     }

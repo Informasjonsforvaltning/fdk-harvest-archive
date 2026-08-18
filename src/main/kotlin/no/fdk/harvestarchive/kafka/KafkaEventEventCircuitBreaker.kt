@@ -2,7 +2,6 @@ package no.fdk.harvestarchive.kafka
 
 import io.github.resilience4j.circuitbreaker.CircuitBreaker
 import no.fdk.event.EventEvent
-import no.fdk.event.EventEventType
 import no.fdk.harvestarchive.archive.ArchiveType
 import no.fdk.harvestarchive.archive.EventArchiveService
 import org.apache.avro.generic.GenericRecord
@@ -23,7 +22,7 @@ open class KafkaEventEventCircuitBreaker(
         try {
             when (val value = record.value()) {
                 is EventEvent -> {
-                    if (value.type != EventEventType.EVENT_HARVESTED && value.type != EventEventType.EVENT_REMOVED) {
+                    if (!ARCHIVE_TYPE.allowsEventType(value.type.name)) {
                         LOGGER.debug("Skipping event event with type {}.", value.type)
                         return@executeCallable ProcessOutcome.Skipped(ARCHIVE_TYPE)
                     }

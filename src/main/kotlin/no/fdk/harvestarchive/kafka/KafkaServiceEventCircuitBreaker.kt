@@ -4,7 +4,6 @@ import io.github.resilience4j.circuitbreaker.CircuitBreaker
 import no.fdk.harvestarchive.archive.ArchiveType
 import no.fdk.harvestarchive.archive.EventArchiveService
 import no.fdk.service.ServiceEvent
-import no.fdk.service.ServiceEventType
 import org.apache.avro.generic.GenericRecord
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.slf4j.Logger
@@ -23,7 +22,7 @@ open class KafkaServiceEventCircuitBreaker(
         try {
             when (val value = record.value()) {
                 is ServiceEvent -> {
-                    if (value.type != ServiceEventType.SERVICE_HARVESTED && value.type != ServiceEventType.SERVICE_REMOVED) {
+                    if (!ARCHIVE_TYPE.allowsEventType(value.type.name)) {
                         LOGGER.debug("Skipping service event with type {}.", value.type)
                         return@executeCallable ProcessOutcome.Skipped(ARCHIVE_TYPE)
                     }
