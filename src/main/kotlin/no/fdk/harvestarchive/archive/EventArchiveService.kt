@@ -2,17 +2,11 @@ package no.fdk.harvestarchive.archive
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import no.fdk.concept.ConceptEvent
-import no.fdk.concept.ConceptEventType
 import no.fdk.dataservice.DataServiceEvent
-import no.fdk.dataservice.DataServiceEventType
 import no.fdk.dataset.DatasetEvent
-import no.fdk.dataset.DatasetEventType
 import no.fdk.event.EventEvent
-import no.fdk.event.EventEventType
 import no.fdk.informationmodel.InformationModelEvent
-import no.fdk.informationmodel.InformationModelEventType
 import no.fdk.service.ServiceEvent
-import no.fdk.service.ServiceEventType
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -40,44 +34,28 @@ class EventArchiveService(
     private val objectMapper = jacksonObjectMapper()
     private val zipThresholdBytes: Long = ZIP_THRESHOLD_BYTES
 
-    private val topicToDir: Map<String, String> =
+    private val archiveTypeToDir: Map<ArchiveType, String> =
         mapOf(
-            "dataset-events" to datasetDir,
-            "concept-events" to conceptDir,
-            "data-service-events" to dataServiceDir,
-            "information-model-events" to informationModelDir,
-            "event-events" to eventDir,
-            "service-events" to serviceDir,
-        )
-
-    private val topicToAllowedTypes: Map<String, Set<String>> =
-        mapOf(
-            "dataset-events" to setOf(DatasetEventType.DATASET_HARVESTED.name, DatasetEventType.DATASET_REMOVED.name),
-            "concept-events" to setOf(ConceptEventType.CONCEPT_HARVESTED.name, ConceptEventType.CONCEPT_REMOVED.name),
-            "data-service-events" to
-                setOf(
-                    DataServiceEventType.DATA_SERVICE_HARVESTED.name,
-                    DataServiceEventType.DATA_SERVICE_REMOVED.name,
-                ),
-            "information-model-events" to
-                setOf(InformationModelEventType.INFORMATION_MODEL_HARVESTED.name, InformationModelEventType.INFORMATION_MODEL_REMOVED.name),
-            "event-events" to setOf(EventEventType.EVENT_HARVESTED.name, EventEventType.EVENT_REMOVED.name),
-            "service-events" to setOf(ServiceEventType.SERVICE_HARVESTED.name, ServiceEventType.SERVICE_REMOVED.name),
+            ArchiveType.DATASET to datasetDir,
+            ArchiveType.CONCEPT to conceptDir,
+            ArchiveType.DATA_SERVICE to dataServiceDir,
+            ArchiveType.INFORMATION_MODEL to informationModelDir,
+            ArchiveType.EVENT to eventDir,
+            ArchiveType.SERVICE to serviceDir,
         )
 
     /**
      * Saves a generic (map) payload to the directory for the given topic, only if the event type is HARVESTED or REMOVED for that topic.
      */
     fun saveGenericForTopic(topic: String, payload: Map<String, Any?>) {
-        val dir = topicToDir[topic] ?: return
-        val allowedTypes = topicToAllowedTypes[topic] ?: return
-        val type = payload["type"]?.toString() ?: return
-        if (type !in allowedTypes) {
-            LOGGER.debug("Skipping generic event with type {} for topic {}", type, topic)
+        val archiveType = ArchiveType.fromTopic(topic) ?: return
+        val eventType = payload["type"]?.toString() ?: return
+        if (!archiveType.allowsEventType(eventType)) {
+            LOGGER.debug("Skipping generic event with type {} for topic {}", eventType, topic)
             return
         }
         val filename = "${payload["timestamp"]}_${payload["fdkId"]}.json"
-        saveAsFile(dir, filename, payload)
+        saveAsFile(archiveTypeToDir.getValue(archiveType), filename, payload)
         LOGGER.debug("Generic event saved to {}", filename)
     }
 
@@ -93,7 +71,7 @@ class EventArchiveService(
                 "catalogGraph" to event.catalogGraph?.toString(),
                 "timestamp" to event.timestamp,
             )
-        saveAsFile(datasetDir, filename, payload)
+        saveAsFile(archiveTypeToDir.getValue(ArchiveType.DATASET), filename, payload)
         LOGGER.debug("Dataset event saved to {}", filename)
     }
 
@@ -109,7 +87,7 @@ class EventArchiveService(
                 "catalogGraph" to event.catalogGraph?.toString(),
                 "timestamp" to event.timestamp,
             )
-        saveAsFile(conceptDir, filename, payload)
+        saveAsFile(archiveTypeToDir.getValue(ArchiveType.CONCEPT), filename, payload)
         LOGGER.debug("Concept event saved to {}", filename)
     }
 
@@ -125,7 +103,7 @@ class EventArchiveService(
                 "catalogGraph" to event.catalogGraph?.toString(),
                 "timestamp" to event.timestamp,
             )
-        saveAsFile(dataServiceDir, filename, payload)
+        saveAsFile(archiveTypeToDir.getValue(ArchiveType.DATA_SERVICE), filename, payload)
         LOGGER.debug("DataService event saved to {}", filename)
     }
 
@@ -141,7 +119,7 @@ class EventArchiveService(
                 "catalogGraph" to event.catalogGraph?.toString(),
                 "timestamp" to event.timestamp,
             )
-        saveAsFile(informationModelDir, filename, payload)
+        saveAsFile(archiveTypeToDir.getValue(ArchiveType.INFORMATION_MODEL), filename, payload)
         LOGGER.debug("InformationModel event saved to {}", filename)
     }
 
@@ -157,7 +135,7 @@ class EventArchiveService(
                 "catalogGraph" to event.catalogGraph?.toString(),
                 "timestamp" to event.timestamp,
             )
-        saveAsFile(eventDir, filename, payload)
+        saveAsFile(archiveTypeToDir.getValue(ArchiveType.EVENT), filename, payload)
         LOGGER.debug("Event event saved to {}", filename)
     }
 
@@ -173,7 +151,7 @@ class EventArchiveService(
                 "catalogGraph" to event.catalogGraph?.toString(),
                 "timestamp" to event.timestamp,
             )
-        saveAsFile(serviceDir, filename, payload)
+        saveAsFile(archiveTypeToDir.getValue(ArchiveType.SERVICE), filename, payload)
         LOGGER.debug("Service event saved to {}", filename)
     }
 
@@ -189,7 +167,7 @@ class EventArchiveService(
      */
     @Scheduled(fixedDelayString = $$"${app.archive.zip-check-interval-ms}")
     fun checkArchiveDirsAndZipIfOverThreshold() {
-        listOf(datasetDir, conceptDir, dataServiceDir, informationModelDir, eventDir, serviceDir)
+        archiveTypeToDir.values
             .map { Paths.get(it) }
             .filter { Files.exists(it) }
             .forEach { createZipIfLargerThanThreshold(it) }
