@@ -2,12 +2,14 @@ package no.fdk.harvestarchive.kafka
 
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException
 import io.github.resilience4j.circuitbreaker.CircuitBreaker
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import no.fdk.event.EventEvent
 import no.fdk.event.EventEventType
 import no.fdk.harvestarchive.archive.ArchiveType
+import no.fdk.harvestarchive.metrics.ArchiveMetrics
 import org.apache.avro.generic.GenericRecord
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.assertj.core.api.Assertions.assertThat
@@ -19,7 +21,7 @@ import java.time.Duration
 @Tag("unit")
 class KafkaEventEventConsumerTest {
     private val circuitBreaker: KafkaEventEventCircuitBreaker = mockk()
-    private val consumer = KafkaEventEventConsumer(circuitBreaker)
+    private val consumer = KafkaEventEventConsumer(circuitBreaker, ArchiveMetrics(SimpleMeterRegistry()))
     private val ack: Acknowledgment = mockk(relaxed = true)
 
     @Test

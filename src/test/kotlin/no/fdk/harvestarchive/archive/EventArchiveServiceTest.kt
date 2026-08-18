@@ -35,6 +35,7 @@ class EventArchiveServiceTest {
                 informationModelDir = tempDir.resolve("information_models").toString(),
                 eventDir = tempDir.resolve("events").toString(),
                 serviceDir = tempDir.resolve("services").toString(),
+                archiveMetrics = ArchiveMetrics(SimpleMeterRegistry()),
             )
         val event =
             DatasetEvent
@@ -71,6 +72,7 @@ class EventArchiveServiceTest {
                 informationModelDir = tempDir.resolve("information_models").toString(),
                 eventDir = tempDir.resolve("events").toString(),
                 serviceDir = tempDir.resolve("services").toString(),
+                archiveMetrics = ArchiveMetrics(SimpleMeterRegistry()),
             )
         val event =
             DatasetEvent
@@ -98,6 +100,7 @@ class EventArchiveServiceTest {
                 informationModelDir = tempDir.resolve("information_models").toString(),
                 eventDir = tempDir.resolve("events").toString(),
                 serviceDir = tempDir.resolve("services").toString(),
+                archiveMetrics = ArchiveMetrics(SimpleMeterRegistry()),
             )
         val objectMapper =
             com.fasterxml.jackson.module.kotlin
@@ -131,6 +134,7 @@ class EventArchiveServiceTest {
                 informationModelDir = tempDir.resolve("information_models").toString(),
                 eventDir = tempDir.resolve("events").toString(),
                 serviceDir = tempDir.resolve("services").toString(),
+                archiveMetrics = ArchiveMetrics(SimpleMeterRegistry()),
             )
         val event =
             ConceptEvent
@@ -162,6 +166,7 @@ class EventArchiveServiceTest {
                 informationModelDir = tempDir.resolve("information_models").toString(),
                 eventDir = tempDir.resolve("events").toString(),
                 serviceDir = tempDir.resolve("services").toString(),
+                archiveMetrics = ArchiveMetrics(SimpleMeterRegistry()),
             )
         val event =
             DataServiceEvent
@@ -193,6 +198,7 @@ class EventArchiveServiceTest {
                 informationModelDir = informationModelDir,
                 eventDir = tempDir.resolve("events").toString(),
                 serviceDir = tempDir.resolve("services").toString(),
+                archiveMetrics = ArchiveMetrics(SimpleMeterRegistry()),
             )
         val event =
             InformationModelEvent
@@ -224,6 +230,7 @@ class EventArchiveServiceTest {
                 informationModelDir = tempDir.resolve("information_models").toString(),
                 eventDir = eventDir,
                 serviceDir = tempDir.resolve("services").toString(),
+                archiveMetrics = ArchiveMetrics(SimpleMeterRegistry()),
             )
         val event =
             EventEvent
@@ -255,6 +262,7 @@ class EventArchiveServiceTest {
                 informationModelDir = tempDir.resolve("information_models").toString(),
                 eventDir = tempDir.resolve("events").toString(),
                 serviceDir = serviceDir,
+                archiveMetrics = ArchiveMetrics(SimpleMeterRegistry()),
             )
         val event =
             ServiceEvent
@@ -286,6 +294,7 @@ class EventArchiveServiceTest {
                 informationModelDir = tempDir.resolve("information_models").toString(),
                 eventDir = tempDir.resolve("events").toString(),
                 serviceDir = tempDir.resolve("services").toString(),
+                archiveMetrics = ArchiveMetrics(SimpleMeterRegistry()),
             )
         val payload =
             mapOf<String, Any?>(
@@ -320,6 +329,7 @@ class EventArchiveServiceTest {
                 informationModelDir = tempDir.resolve("information_models").toString(),
                 eventDir = tempDir.resolve("events").toString(),
                 serviceDir = tempDir.resolve("services").toString(),
+                archiveMetrics = ArchiveMetrics(SimpleMeterRegistry()),
             )
         val payload =
             mapOf<String, Any?>(
@@ -350,6 +360,7 @@ class EventArchiveServiceTest {
                 informationModelDir = tempDir.resolve("information_models").toString(),
                 eventDir = tempDir.resolve("events").toString(),
                 serviceDir = tempDir.resolve("services").toString(),
+                archiveMetrics = ArchiveMetrics(SimpleMeterRegistry()),
             )
         val payload =
             mapOf<String, Any?>(
@@ -376,6 +387,7 @@ class EventArchiveServiceTest {
                 informationModelDir = tempDir.resolve("information_models").toString(),
                 eventDir = tempDir.resolve("events").toString(),
                 serviceDir = tempDir.resolve("services").toString(),
+                archiveMetrics = ArchiveMetrics(SimpleMeterRegistry()),
             )
         val payload =
             mapOf<String, Any?>(
@@ -394,8 +406,7 @@ class EventArchiveServiceTest {
     @Test
     fun `saveDataset records saved file metrics`(@TempDir tempDir: Path) {
         val registry = SimpleMeterRegistry()
-        ArchiveMetrics.bind(registry)
-        val service = serviceFor(tempDir)
+        val service = serviceFor(tempDir, ArchiveMetrics(registry))
 
         service.saveDataset(
             DatasetEvent
@@ -425,8 +436,7 @@ class EventArchiveServiceTest {
     @Test
     fun `saveGenericForTopic records skipped metrics for unknown topic and disallowed type`(@TempDir tempDir: Path) {
         val registry = SimpleMeterRegistry()
-        ArchiveMetrics.bind(registry)
-        val service = serviceFor(tempDir)
+        val service = serviceFor(tempDir, ArchiveMetrics(registry))
 
         service.saveGenericForTopic(
             "unknown-topic",
@@ -459,12 +469,13 @@ class EventArchiveServiceTest {
         ).isEqualTo(1.0)
     }
 
-    private fun serviceFor(tempDir: Path) = EventArchiveService(
+    private fun serviceFor(tempDir: Path, archiveMetrics: ArchiveMetrics = ArchiveMetrics(SimpleMeterRegistry())) = EventArchiveService(
         datasetDir = tempDir.resolve("datasets").toString(),
         conceptDir = tempDir.resolve("concepts").toString(),
         dataServiceDir = tempDir.resolve("data_services").toString(),
         informationModelDir = tempDir.resolve("information_models").toString(),
         eventDir = tempDir.resolve("events").toString(),
         serviceDir = tempDir.resolve("services").toString(),
+        archiveMetrics = archiveMetrics,
     )
 }

@@ -17,6 +17,7 @@ import java.time.Duration
 class KafkaConceptEventConsumer(
     @param:Qualifier("kafkaConceptEventCircuitBreaker")
     private val circuitBreaker: KafkaCircuitBreakerApi,
+    private val archiveMetrics: ArchiveMetrics,
 ) {
     private fun logger(): Logger = LOGGER
 
@@ -35,13 +36,13 @@ class KafkaConceptEventConsumer(
                 is ProcessOutcome.Saved -> EventProcessingResult.ACKED
                 is ProcessOutcome.Skipped -> EventProcessingResult.SKIPPED
             }
-            ArchiveMetrics.recordEventProcessed(outcome.archiveType, result)
+            archiveMetrics.recordEventProcessed(outcome.archiveType, result)
             ack.acknowledge()
         } catch (e: CallNotPermittedException) {
-            ArchiveMetrics.recordEventProcessed(ARCHIVE_TYPE, EventProcessingResult.CIRCUIT_OPEN)
+            archiveMetrics.recordEventProcessed(ARCHIVE_TYPE, EventProcessingResult.CIRCUIT_OPEN)
             ack.nack(Duration.ZERO)
         } catch (e: Exception) {
-            ArchiveMetrics.recordEventProcessed(ARCHIVE_TYPE, EventProcessingResult.NACKED)
+            archiveMetrics.recordEventProcessed(ARCHIVE_TYPE, EventProcessingResult.NACKED)
             ack.nack(Duration.ZERO)
         }
     }

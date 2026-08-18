@@ -13,12 +13,12 @@ import java.nio.file.Path
 @Tag("unit")
 class ArchiveZipperTest {
     private lateinit var registry: SimpleMeterRegistry
+    private lateinit var archiveMetrics: ArchiveMetrics
 
     @BeforeEach
     fun setUp() {
         registry = SimpleMeterRegistry()
-        ArchiveMetrics.bind(registry)
-        ArchiveMetrics.registerGauges()
+        archiveMetrics = ArchiveMetrics(registry)
     }
 
     private fun zipperFor(tempDir: Path) = ArchiveZipper(
@@ -30,6 +30,7 @@ class ArchiveZipperTest {
         serviceDir = tempDir.resolve("services").toString(),
         zipThresholdBytes = 10L * 1024 * 1024 * 1024,
         zipMaxFileCount = 2000,
+        archiveMetrics = archiveMetrics,
     )
 
     @Test

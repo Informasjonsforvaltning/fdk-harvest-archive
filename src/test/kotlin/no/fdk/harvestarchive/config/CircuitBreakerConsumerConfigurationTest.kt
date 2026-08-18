@@ -3,9 +3,11 @@ package no.fdk.harvestarchive.config
 import io.github.resilience4j.circuitbreaker.CircuitBreaker
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.mockk.mockk
 import io.mockk.verify
 import no.fdk.harvestarchive.kafka.KafkaManager
+import no.fdk.harvestarchive.metrics.ArchiveMetrics
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
@@ -28,7 +30,7 @@ class CircuitBreakerConsumerConfigurationTest {
                 .build()
 
         val registry = CircuitBreakerRegistry.of(cbConfig)
-        HarvestCircuitBreakerConfig(kafkaManager).registerListeners(registry)
+        HarvestCircuitBreakerConfig(kafkaManager, ArchiveMetrics(SimpleMeterRegistry())).registerListeners(registry)
         val cb = registry.circuitBreaker(HarvestCircuitBreakerConfig.DATASET_CIRCUIT_BREAKER_ID)
 
         repeat(2) {
@@ -48,7 +50,7 @@ class CircuitBreakerConsumerConfigurationTest {
         val kafkaManager = mockk<KafkaManager>(relaxed = true)
 
         val registry = CircuitBreakerRegistry.ofDefaults()
-        HarvestCircuitBreakerConfig(kafkaManager).registerListeners(registry)
+        HarvestCircuitBreakerConfig(kafkaManager, ArchiveMetrics(SimpleMeterRegistry())).registerListeners(registry)
         val cb = registry.circuitBreaker(HarvestCircuitBreakerConfig.DATASET_CIRCUIT_BREAKER_ID)
 
         cb.transitionToOpenState()
@@ -63,7 +65,7 @@ class CircuitBreakerConsumerConfigurationTest {
     fun `bean methods create circuit breakers from registry`() {
         val kafkaManager = mockk<KafkaManager>(relaxed = true)
 
-        val config = HarvestCircuitBreakerConfig(kafkaManager)
+        val config = HarvestCircuitBreakerConfig(kafkaManager, ArchiveMetrics(SimpleMeterRegistry()))
         val registry = config.circuitBreakerRegistry()
 
         val datasetCb = config.datasetArchiveCircuitBreaker(registry)

@@ -27,6 +27,7 @@ class ArchiveZipper(
     @param:Value("\${app.archive.service-dir}") private val serviceDir: String,
     @param:Value("\${app.archive.zip-threshold-bytes}") private val zipThresholdBytes: Long,
     @param:Value("\${app.archive.zip-max-file-count}") private val zipMaxFileCount: Int,
+    private val archiveMetrics: ArchiveMetrics,
 ) {
     private val archiveTypeToDir: Map<ArchiveType, String> =
         mapOf(
@@ -63,7 +64,7 @@ class ArchiveZipper(
         val totalSize = files.sumOf { Files.size(it) }
         val fileCount = files.size.toLong()
 
-        ArchiveMetrics.updateDirectorySnapshot(archiveType, totalSize, fileCount)
+        archiveMetrics.updateDirectorySnapshot(archiveType, totalSize, fileCount)
 
         if (totalSize < thresholdBytes) return
 
@@ -108,7 +109,7 @@ class ArchiveZipper(
 
                     zipBytes
                 }
-            ArchiveMetrics.recordZip(
+            archiveMetrics.recordZip(
                 archiveType,
                 ZipStatus.SUCCESS,
                 filesToArchive.size,
@@ -116,7 +117,7 @@ class ArchiveZipper(
                 timed.duration,
             )
         } catch (e: Exception) {
-            ArchiveMetrics.recordZip(
+            archiveMetrics.recordZip(
                 archiveType,
                 ZipStatus.ERROR,
                 0,

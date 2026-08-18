@@ -19,7 +19,7 @@ import org.springframework.context.annotation.Configuration
 import java.time.Duration
 
 @Configuration
-open class HarvestCircuitBreakerConfig(private val kafkaManager: KafkaManager) {
+open class HarvestCircuitBreakerConfig(private val kafkaManager: KafkaManager, private val archiveMetrics: ArchiveMetrics) {
     @Bean
     open fun circuitBreakerRegistry(): CircuitBreakerRegistry {
         val defaultConfig =
@@ -89,7 +89,7 @@ open class HarvestCircuitBreakerConfig(private val kafkaManager: KafkaManager) {
             -> {
                 LOGGER.warn("Circuit breaker opened, pausing Kafka listener: {}", listenerId)
                 kafkaManager.pause(listenerId)
-                ArchiveMetrics.setListenerPaused(listenerId, true)
+                archiveMetrics.setListenerPaused(listenerId, true)
             }
 
             StateTransition.OPEN_TO_HALF_OPEN,
@@ -99,7 +99,7 @@ open class HarvestCircuitBreakerConfig(private val kafkaManager: KafkaManager) {
             -> {
                 LOGGER.info("Circuit breaker closed, resuming Kafka listener: {}", listenerId)
                 kafkaManager.resume(listenerId)
-                ArchiveMetrics.setListenerPaused(listenerId, false)
+                archiveMetrics.setListenerPaused(listenerId, false)
             }
 
             else -> {

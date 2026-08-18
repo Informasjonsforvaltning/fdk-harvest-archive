@@ -31,6 +31,7 @@ class EventArchiveService(
     @param:Value($$"${app.archive.information-model-dir}") private val informationModelDir: String,
     @param:Value($$"${app.archive.event-dir}") private val eventDir: String,
     @param:Value($$"${app.archive.service-dir}") private val serviceDir: String,
+    private val archiveMetrics: ArchiveMetrics,
 ) {
     private val objectMapper = jacksonObjectMapper()
 
@@ -50,17 +51,17 @@ class EventArchiveService(
     fun saveGenericForTopic(topic: String, payload: Map<String, Any?>): ProcessOutcome {
         val archiveType = ArchiveType.fromTopic(topic)
         if (archiveType == null) {
-            ArchiveMetrics.recordSkipped(null, SkipReason.UNKNOWN_TOPIC)
+            archiveMetrics.recordSkipped(null, SkipReason.UNKNOWN_TOPIC)
             return ProcessOutcome.Skipped(null)
         }
         val eventType = payload["type"]?.toString()
         if (eventType == null) {
-            ArchiveMetrics.recordSkipped(archiveType, SkipReason.MISSING_TYPE)
+            archiveMetrics.recordSkipped(archiveType, SkipReason.MISSING_TYPE)
             return ProcessOutcome.Skipped(archiveType)
         }
         if (!archiveType.allowsEventType(eventType)) {
             LOGGER.debug("Skipping generic event with type {} for topic {}", eventType, topic)
-            ArchiveMetrics.recordSkipped(archiveType, SkipReason.DISALLOWED_TYPE)
+            archiveMetrics.recordSkipped(archiveType, SkipReason.DISALLOWED_TYPE)
             return ProcessOutcome.Skipped(archiveType)
         }
         savePayload(archiveType, payload)
@@ -174,10 +175,10 @@ class EventArchiveService(
         val filename = "${payload["timestamp"]}_${payload["fdkId"]}.json"
         try {
             val result = saveAsFile(archiveTypeToDir.getValue(archiveType), filename, payload)
-            ArchiveMetrics.recordSaved(archiveType, eventType, result.bytes, result.duration)
+            archiveMetrics.recordSaved(archiveType, eventType, result.bytes, result.duration)
             LOGGER.debug("Event saved to {}", filename)
         } catch (e: Exception) {
-            ArchiveMetrics.recordSaveError(archiveType, eventType)
+            archiveMetrics.recordSaveError(archiveType, eventType)
             throw e
         }
     }

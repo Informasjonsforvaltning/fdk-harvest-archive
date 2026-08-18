@@ -2,31 +2,22 @@ package no.fdk.harvestarchive.metrics
 
 import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.MeterRegistry
-import io.micrometer.core.instrument.Metrics
 import no.fdk.harvestarchive.archive.ArchiveType
+import org.springframework.stereotype.Component
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.time.Duration
 import kotlin.time.toJavaDuration
 
-object ArchiveMetrics {
-    private var registry: MeterRegistry = Metrics.globalRegistry
-    private val gaugesRegistered = AtomicBoolean(false)
+@Component
+class ArchiveMetrics(private val registry: MeterRegistry) {
     private val listenerPaused = ConcurrentHashMap<String, AtomicInteger>()
     private val dirBytes = ConcurrentHashMap<ArchiveType, AtomicLong>()
     private val dirFiles = ConcurrentHashMap<ArchiveType, AtomicLong>()
 
-    fun bind(registry: MeterRegistry) {
-        if (this.registry !== registry) {
-            this.registry = registry
-            gaugesRegistered.set(false)
-        }
-    }
-
-    fun registerGauges() {
-        ensureGaugesRegistered()
+    init {
+        registerGauges()
     }
 
     fun recordSaved(type: ArchiveType, eventType: String, bytes: Long, duration: Duration) {
@@ -105,12 +96,10 @@ object ArchiveMetrics {
     }
 
     fun setListenerPaused(listenerId: String, paused: Boolean) {
-        ensureGaugesRegistered()
         listenerPausedValue(listenerId).set(if (paused) 1 else 0)
     }
 
     fun updateDirectorySnapshot(type: ArchiveType, bytes: Long, fileCount: Long) {
-        ensureGaugesRegistered()
         dirBytesValue(type).set(bytes)
         dirFilesValue(type).set(fileCount)
     }
@@ -121,9 +110,7 @@ object ArchiveMetrics {
         else -> "other"
     }
 
-    private fun ensureGaugesRegistered() {
-        if (!gaugesRegistered.compareAndSet(false, true)) return
-
+    private fun registerGauges() {
         ArchiveType.entries.forEach { type ->
             Gauge
                 .builder("kafka_listener_paused") { listenerPausedValue(type.listenerId).get().toDouble() }

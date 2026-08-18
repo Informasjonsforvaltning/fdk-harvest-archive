@@ -2,7 +2,6 @@ package no.fdk.harvestarchive.metrics
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import no.fdk.harvestarchive.archive.ArchiveType
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Tag
@@ -12,22 +11,17 @@ import kotlin.time.Duration.Companion.milliseconds
 @Tag("unit")
 class ArchiveMetricsTest {
     private lateinit var registry: SimpleMeterRegistry
+    private lateinit var metrics: ArchiveMetrics
 
     @BeforeEach
     fun setUp() {
         registry = SimpleMeterRegistry()
-        ArchiveMetrics.bind(registry)
-    }
-
-    @AfterEach
-    fun tearDown() {
-        ArchiveType.entries.forEach { ArchiveMetrics.setListenerPaused(it.listenerId, false) }
-        registry.clear()
+        metrics = ArchiveMetrics(registry)
     }
 
     @Test
     fun `recordSaved increments files saved counter timer and byte summary`() {
-        ArchiveMetrics.recordSaved(ArchiveType.DATASET, "DATASET_HARVESTED", 128, 10.milliseconds)
+        metrics.recordSaved(ArchiveType.DATASET, "DATASET_HARVESTED", 128, 10.milliseconds)
 
         assertEquals(
             1.0,
@@ -48,7 +42,7 @@ class ArchiveMetricsTest {
 
     @Test
     fun `recordSaveError increments files saved error counter`() {
-        ArchiveMetrics.recordSaveError(ArchiveType.CONCEPT, "CONCEPT_REMOVED")
+        metrics.recordSaveError(ArchiveType.CONCEPT, "CONCEPT_REMOVED")
 
         assertEquals(
             1.0,
@@ -67,8 +61,8 @@ class ArchiveMetricsTest {
 
     @Test
     fun `recordSkipped increments skipped counter with reason`() {
-        ArchiveMetrics.recordSkipped(ArchiveType.DATASET, ArchiveMetrics.SkipReason.DISALLOWED_TYPE)
-        ArchiveMetrics.recordSkipped(null, ArchiveMetrics.SkipReason.UNKNOWN_TOPIC)
+        metrics.recordSkipped(ArchiveType.DATASET, ArchiveMetrics.SkipReason.DISALLOWED_TYPE)
+        metrics.recordSkipped(null, ArchiveMetrics.SkipReason.UNKNOWN_TOPIC)
 
         assertEquals(
             1.0,
@@ -96,7 +90,7 @@ class ArchiveMetricsTest {
 
     @Test
     fun `recordZip increments zip counters and summaries`() {
-        ArchiveMetrics.recordZip(ArchiveType.SERVICE, ArchiveMetrics.ZipStatus.SUCCESS, 3, 256, 20.milliseconds)
+        metrics.recordZip(ArchiveType.SERVICE, ArchiveMetrics.ZipStatus.SUCCESS, 3, 256, 20.milliseconds)
 
         assertEquals(
             1.0,
@@ -119,8 +113,8 @@ class ArchiveMetricsTest {
 
     @Test
     fun `recordEventProcessed increments processing total`() {
-        ArchiveMetrics.recordEventProcessed(ArchiveType.DATASET, ArchiveMetrics.EventProcessingResult.ACKED)
-        ArchiveMetrics.recordEventProcessed(null, ArchiveMetrics.EventProcessingResult.CIRCUIT_OPEN)
+        metrics.recordEventProcessed(ArchiveType.DATASET, ArchiveMetrics.EventProcessingResult.ACKED)
+        metrics.recordEventProcessed(null, ArchiveMetrics.EventProcessingResult.CIRCUIT_OPEN)
 
         assertEquals(
             1.0,
@@ -147,9 +141,7 @@ class ArchiveMetricsTest {
     }
 
     @Test
-    fun `registerGauges exposes listener paused and directory gauges`() {
-        ArchiveMetrics.registerGauges()
-
+    fun `gauges expose listener paused and directory snapshots`() {
         assertEquals(
             0.0,
             registry.find("kafka_listener_paused").tag("listener", "dataset-archive").gauge()?.value(),
@@ -159,8 +151,8 @@ class ArchiveMetricsTest {
             registry.find("harvest_archive_dir_bytes").tag("type", "datasets").gauge()?.value(),
         )
 
-        ArchiveMetrics.setListenerPaused("dataset-archive", true)
-        ArchiveMetrics.updateDirectorySnapshot(ArchiveType.DATASET, 1024, 7)
+        metrics.setListenerPaused("dataset-archive", true)
+        metrics.updateDirectorySnapshot(ArchiveType.DATASET, 1024, 7)
 
         assertEquals(
             1.0,
