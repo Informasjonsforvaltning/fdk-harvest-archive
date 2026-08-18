@@ -5,19 +5,14 @@ import io.github.resilience4j.circuitbreaker.CircuitBreaker.StateTransition
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry
 import io.github.resilience4j.circuitbreaker.event.CircuitBreakerOnStateTransitionEvent
-import no.fdk.harvestarchive.kafka.KafkaConceptEventCircuitBreaker
 import no.fdk.harvestarchive.kafka.KafkaConceptEventConsumer
-import no.fdk.harvestarchive.kafka.KafkaDataServiceEventCircuitBreaker
 import no.fdk.harvestarchive.kafka.KafkaDataServiceEventConsumer
-import no.fdk.harvestarchive.kafka.KafkaDatasetEventCircuitBreaker
 import no.fdk.harvestarchive.kafka.KafkaDatasetEventConsumer
-import no.fdk.harvestarchive.kafka.KafkaEventEventCircuitBreaker
 import no.fdk.harvestarchive.kafka.KafkaEventEventConsumer
-import no.fdk.harvestarchive.kafka.KafkaInformationModelEventCircuitBreaker
 import no.fdk.harvestarchive.kafka.KafkaInformationModelEventConsumer
 import no.fdk.harvestarchive.kafka.KafkaManager
-import no.fdk.harvestarchive.kafka.KafkaServiceEventCircuitBreaker
 import no.fdk.harvestarchive.kafka.KafkaServiceEventConsumer
+import no.fdk.harvestarchive.metrics.ArchiveMetrics
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -94,6 +89,7 @@ open class HarvestCircuitBreakerConfig(private val kafkaManager: KafkaManager) {
             -> {
                 LOGGER.warn("Circuit breaker opened, pausing Kafka listener: {}", listenerId)
                 kafkaManager.pause(listenerId)
+                ArchiveMetrics.setListenerPaused(listenerId, true)
             }
 
             StateTransition.OPEN_TO_HALF_OPEN,
@@ -103,6 +99,7 @@ open class HarvestCircuitBreakerConfig(private val kafkaManager: KafkaManager) {
             -> {
                 LOGGER.info("Circuit breaker closed, resuming Kafka listener: {}", listenerId)
                 kafkaManager.resume(listenerId)
+                ArchiveMetrics.setListenerPaused(listenerId, false)
             }
 
             else -> {

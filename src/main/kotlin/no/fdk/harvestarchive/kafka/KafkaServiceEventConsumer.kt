@@ -1,5 +1,9 @@
 package no.fdk.harvestarchive.kafka
 
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException
+import no.fdk.harvestarchive.archive.ArchiveType
+import no.fdk.harvestarchive.metrics.ArchiveMetrics
+import no.fdk.harvestarchive.metrics.ArchiveMetrics.EventProcessingResult
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -9,11 +13,6 @@ import org.springframework.kafka.support.Acknowledgment
 import org.springframework.stereotype.Component
 import java.time.Duration
 
-/**
- * Kafka listener for [ServiceEvent] on topic `service-events`.
- * Processes only [ServiceEventType.SERVICE_HARVESTED] and [ServiceEventType.SERVICE_REMOVED];
- * other types are acknowledged and skipped. Delegates to the circuit breaker and nacks on failure.
- */
 @Component
 class KafkaServiceEventConsumer(
     @param:Qualifier("kafkaServiceEventCircuitBreaker")
@@ -31,15 +30,25 @@ class KafkaServiceEventConsumer(
         logger().debug("Received service event - offset: {}, partition: {}", record.offset(), record.partition())
 
         try {
-            circuitBreaker.process(record)
+            val outcome = circuitBreaker.process(record)
+            val result = when (outcome) {
+                is ProcessOutcome.Saved -> EventProcessingResult.ACKED
+                is ProcessOutcome.Skipped -> EventProcessingResult.SKIPPED
+            }
+            ArchiveMetrics.recordEventProcessed(outcome.archiveType, result)
             ack.acknowledge()
+        } catch (e: CallNotPermittedException) {
+            ArchiveMetrics.recordEventProcessed(ARCHIVE_TYPE, EventProcessingResult.CIRCUIT_OPEN)
+            ack.nack(Duration.ZERO)
         } catch (e: Exception) {
+            ArchiveMetrics.recordEventProcessed(ARCHIVE_TYPE, EventProcessingResult.NACKED)
             ack.nack(Duration.ZERO)
         }
     }
 
     companion object {
         private val LOGGER: Logger = LoggerFactory.getLogger(KafkaServiceEventConsumer::class.java)
+        private val ARCHIVE_TYPE = ArchiveType.SERVICE
         const val LISTENER_ID = "service-archive"
     }
 }

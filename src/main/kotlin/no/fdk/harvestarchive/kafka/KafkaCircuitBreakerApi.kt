@@ -11,8 +11,8 @@ interface KafkaCircuitBreakerApi {
     fun process(record: ConsumerRecord<String, Any>): ProcessOutcome
 }
 
-sealed class ProcessOutcome {
-    data class Saved(val archiveType: ArchiveType) : ProcessOutcome()
+sealed class ProcessOutcome(open val archiveType: ArchiveType?) {
+    data class Saved(override val archiveType: ArchiveType) : ProcessOutcome(archiveType)
 
-    data class Skipped(val archiveType: ArchiveType?) : ProcessOutcome()
+    data class Skipped(override val archiveType: ArchiveType?) : ProcessOutcome(archiveType)
 }
