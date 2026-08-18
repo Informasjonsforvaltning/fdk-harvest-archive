@@ -31,7 +31,7 @@ class KafkaConceptEventConsumerTest {
         val genericRecord = mockk<GenericRecord>(relaxed = true)
         val record: ConsumerRecord<String, Any> = ConsumerRecord("concept-events", 0, 0L, "key", genericRecord)
 
-        every { circuitBreaker.process(any()) } returns Unit
+        every { circuitBreaker.process(any()) } returns ProcessOutcome.Saved(no.fdk.harvestarchive.archive.ArchiveType.CONCEPT)
 
         consumer.consumeConceptEvent(record, ack)
 
@@ -54,7 +54,7 @@ class KafkaConceptEventConsumerTest {
                 .build()
         val record: ConsumerRecord<String, Any> = ConsumerRecord("concept-events", 0, 0L, "key", event as Any)
 
-        every { circuitBreaker.process(any()) } returns Unit
+        every { circuitBreaker.process(any()) } returns ProcessOutcome.Saved(no.fdk.harvestarchive.archive.ArchiveType.CONCEPT)
 
         consumer.consumeConceptEvent(record, ack)
 
@@ -77,7 +77,7 @@ class KafkaConceptEventConsumerTest {
                 .build()
         val record: ConsumerRecord<String, Any> = ConsumerRecord("concept-events", 0, 0L, "key", event as Any)
 
-        every { circuitBreaker.process(any()) } returns Unit
+        every { circuitBreaker.process(any()) } returns ProcessOutcome.Saved(no.fdk.harvestarchive.archive.ArchiveType.CONCEPT)
 
         consumer.consumeConceptEvent(record, ack)
 

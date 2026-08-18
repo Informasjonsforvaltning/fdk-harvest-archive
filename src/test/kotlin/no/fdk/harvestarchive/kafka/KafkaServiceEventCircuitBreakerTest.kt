@@ -4,9 +4,11 @@ import io.github.resilience4j.circuitbreaker.CircuitBreaker
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import no.fdk.harvestarchive.archive.ArchiveType
 import no.fdk.harvestarchive.archive.EventArchiveService
 import no.fdk.service.ServiceEvent
 import no.fdk.service.ServiceEventType
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
@@ -23,7 +25,7 @@ class KafkaServiceEventCircuitBreakerTest {
             .ConsumerRecord("service-events", 0, 0L, "key", event as Any)
 
     @Test
-    fun `process calls eventArchiveService saveService with event`() {
+    fun `process calls eventArchiveService saveService with event and returns Saved`() {
         val event =
             ServiceEvent
                 .newBuilder()
@@ -36,13 +38,14 @@ class KafkaServiceEventCircuitBreakerTest {
                 .build()
         every { eventArchiveService.saveService(any()) } returns Unit
 
-        circuitBreaker.process(recordFor(event))
+        val outcome = circuitBreaker.process(recordFor(event))
 
+        assertThat(outcome).isEqualTo(ProcessOutcome.Saved(ArchiveType.SERVICE))
         verify(exactly = 1) { eventArchiveService.saveService(event) }
     }
 
     @Test
-    fun `reasoned events are skipped`() {
+    fun `reasoned events are skipped and return Skipped`() {
         val event =
             ServiceEvent
                 .newBuilder()
@@ -54,8 +57,9 @@ class KafkaServiceEventCircuitBreakerTest {
                 .setTimestamp(123)
                 .build()
 
-        circuitBreaker.process(recordFor(event))
+        val outcome = circuitBreaker.process(recordFor(event))
 
+        assertThat(outcome).isEqualTo(ProcessOutcome.Skipped(ArchiveType.SERVICE))
         verify(exactly = 0) { eventArchiveService.saveService(any()) }
     }
 
@@ -79,7 +83,7 @@ class KafkaServiceEventCircuitBreakerTest {
     }
 
     @Test
-    fun `unsupported value type is skipped and genericProcessor not called`() {
+    fun `unsupported value type returns Skipped`() {
         val record =
             org.apache.kafka.clients.consumer.ConsumerRecord<String, Any>(
                 "service-events",
@@ -89,8 +93,9 @@ class KafkaServiceEventCircuitBreakerTest {
                 true,
             )
 
-        circuitBreaker.process(record)
+        val outcome = circuitBreaker.process(record)
 
+        assertThat(outcome).isEqualTo(ProcessOutcome.Skipped(ArchiveType.SERVICE))
         verify(exactly = 0) { eventArchiveService.saveService(any()) }
         verify(exactly = 0) { genericProcessor.process(any(), any()) }
     }

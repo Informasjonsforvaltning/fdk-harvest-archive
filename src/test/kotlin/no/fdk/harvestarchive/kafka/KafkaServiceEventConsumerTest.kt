@@ -31,7 +31,7 @@ class KafkaServiceEventConsumerTest {
         val genericRecord = mockk<GenericRecord>(relaxed = true)
         val record: ConsumerRecord<String, Any> = ConsumerRecord("service-events", 0, 0L, "key", genericRecord)
 
-        every { circuitBreaker.process(any()) } returns Unit
+        every { circuitBreaker.process(any()) } returns ProcessOutcome.Saved(no.fdk.harvestarchive.archive.ArchiveType.SERVICE)
 
         consumer.consumeServiceEvent(record, ack)
 
@@ -54,7 +54,7 @@ class KafkaServiceEventConsumerTest {
                 .build()
         val record: ConsumerRecord<String, Any> = ConsumerRecord("service-events", 0, 0L, "key", event as Any)
 
-        every { circuitBreaker.process(any()) } returns Unit
+        every { circuitBreaker.process(any()) } returns ProcessOutcome.Saved(no.fdk.harvestarchive.archive.ArchiveType.SERVICE)
 
         consumer.consumeServiceEvent(record, ack)
 
@@ -77,7 +77,7 @@ class KafkaServiceEventConsumerTest {
                 .build()
         val record: ConsumerRecord<String, Any> = ConsumerRecord("service-events", 0, 0L, "key", event as Any)
 
-        every { circuitBreaker.process(any()) } returns Unit
+        every { circuitBreaker.process(any()) } returns ProcessOutcome.Saved(no.fdk.harvestarchive.archive.ArchiveType.SERVICE)
 
         consumer.consumeServiceEvent(record, ack)
 

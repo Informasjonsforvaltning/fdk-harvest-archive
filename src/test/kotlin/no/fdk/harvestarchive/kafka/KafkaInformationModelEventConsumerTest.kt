@@ -31,7 +31,7 @@ class KafkaInformationModelEventConsumerTest {
         val genericRecord = mockk<GenericRecord>(relaxed = true)
         val record: ConsumerRecord<String, Any> = ConsumerRecord("information-model-events", 0, 0L, "key", genericRecord)
 
-        every { circuitBreaker.process(any()) } returns Unit
+        every { circuitBreaker.process(any()) } returns ProcessOutcome.Saved(no.fdk.harvestarchive.archive.ArchiveType.INFORMATION_MODEL)
 
         consumer.consumeInformationModelEvent(record, ack)
 
@@ -54,7 +54,7 @@ class KafkaInformationModelEventConsumerTest {
                 .build()
         val record: ConsumerRecord<String, Any> = ConsumerRecord("information-model-events", 0, 0L, "key", event as Any)
 
-        every { circuitBreaker.process(any()) } returns Unit
+        every { circuitBreaker.process(any()) } returns ProcessOutcome.Saved(no.fdk.harvestarchive.archive.ArchiveType.INFORMATION_MODEL)
 
         consumer.consumeInformationModelEvent(record, ack)
 
@@ -77,7 +77,7 @@ class KafkaInformationModelEventConsumerTest {
                 .build()
         val record: ConsumerRecord<String, Any> = ConsumerRecord("information-model-events", 0, 0L, "key", event as Any)
 
-        every { circuitBreaker.process(any()) } returns Unit
+        every { circuitBreaker.process(any()) } returns ProcessOutcome.Saved(no.fdk.harvestarchive.archive.ArchiveType.INFORMATION_MODEL)
 
         consumer.consumeInformationModelEvent(record, ack)
 
