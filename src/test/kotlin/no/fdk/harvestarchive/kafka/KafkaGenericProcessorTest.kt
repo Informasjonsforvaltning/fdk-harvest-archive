@@ -4,6 +4,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import no.fdk.harvestarchive.archive.ArchiveType
+import no.fdk.harvestarchive.archive.ArchiveWrite
 import no.fdk.harvestarchive.archive.EventArchiveService
 import org.apache.avro.generic.GenericRecord
 import org.assertj.core.api.Assertions.assertThat
@@ -27,7 +28,7 @@ class KafkaGenericProcessorTest {
         every { genericRecord.get("graph") } returns "<> a <http://example.org/Dataset> ."
         every { genericRecord.get("timestamp") } returns 1700000000000L
 
-        every { eventArchiveService.saveGenericForTopic(any(), any()) } returns ProcessOutcome.Saved(ArchiveType.DATASET)
+        every { eventArchiveService.saveGenericForTopic(any(), any()) } returns ArchiveWrite.Saved(ArchiveType.DATASET)
 
         val outcome = processor.process(genericRecord, "dataset-events")
 
@@ -58,7 +59,7 @@ class KafkaGenericProcessorTest {
         every { genericRecord.get("graph") } returns ""
         every { genericRecord.get("timestamp") } returns 123L
 
-        every { eventArchiveService.saveGenericForTopic(any(), any()) } returns ProcessOutcome.Saved(ArchiveType.CONCEPT)
+        every { eventArchiveService.saveGenericForTopic(any(), any()) } returns ArchiveWrite.Saved(ArchiveType.CONCEPT)
 
         val outcome = processor.process(genericRecord, "concept-events")
 
@@ -99,7 +100,7 @@ class KafkaGenericProcessorTest {
     fun `process returns Skipped when saveGenericForTopic skips the payload`() {
         val genericRecord = mockk<GenericRecord>(relaxed = true)
         every { genericRecord.get("type") } returns "DATASET_REASONED"
-        every { eventArchiveService.saveGenericForTopic(any(), any()) } returns ProcessOutcome.Skipped(ArchiveType.DATASET)
+        every { eventArchiveService.saveGenericForTopic(any(), any()) } returns ArchiveWrite.Skipped(ArchiveType.DATASET)
 
         val outcome = processor.process(genericRecord, "dataset-events")
 

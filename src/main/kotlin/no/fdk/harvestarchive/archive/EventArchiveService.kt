@@ -5,7 +5,6 @@ import no.fdk.concept.ConceptEvent
 import no.fdk.dataservice.DataServiceEvent
 import no.fdk.dataset.DatasetEvent
 import no.fdk.event.EventEvent
-import no.fdk.harvestarchive.kafka.ProcessOutcome
 import no.fdk.harvestarchive.metrics.ArchiveMetrics
 import no.fdk.informationmodel.InformationModelEvent
 import no.fdk.service.ServiceEvent
@@ -47,21 +46,21 @@ class EventArchiveService(
     /**
      * Saves a generic (map) payload to the directory for the given topic, only if the event type is HARVESTED or REMOVED for that topic.
      */
-    fun saveGenericForTopic(topic: String, payload: Map<String, Any?>): ProcessOutcome {
+    fun saveGenericForTopic(topic: String, payload: Map<String, Any?>): ArchiveWrite {
         val archiveType = ArchiveType.fromTopic(topic)
         if (archiveType == null) {
-            return ProcessOutcome.Skipped(null)
+            return ArchiveWrite.Skipped(null)
         }
         val eventType = payload["type"]?.toString()
         if (eventType == null) {
-            return ProcessOutcome.Skipped(archiveType)
+            return ArchiveWrite.Skipped(archiveType)
         }
         if (!archiveType.allowsEventType(eventType)) {
             LOGGER.debug("Skipping generic event with type {} for topic {}", eventType, topic)
-            return ProcessOutcome.Skipped(archiveType)
+            return ArchiveWrite.Skipped(archiveType)
         }
         savePayload(archiveType, payload)
-        return ProcessOutcome.Saved(archiveType)
+        return ArchiveWrite.Saved(archiveType)
     }
 
     fun saveDataset(event: DatasetEvent) {

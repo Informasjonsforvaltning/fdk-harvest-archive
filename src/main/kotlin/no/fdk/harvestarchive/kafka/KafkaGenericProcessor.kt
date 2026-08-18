@@ -19,7 +19,7 @@ open class KafkaGenericProcessor(private val eventArchiveService: EventArchiveSe
                     "graph" to event.get("graph")?.toString(),
                     "timestamp" to event.get("timestamp")?.toString(),
                 )
-            return eventArchiveService.saveGenericForTopic(topic, payload)
+            return ProcessOutcome.from(eventArchiveService.saveGenericForTopic(topic, payload))
         } catch (e: Exception) {
             LOGGER.error("Error processing generic record with fdkId: {} and type: {}", event.get("fdkId"), event.get("type"), e)
             throw e

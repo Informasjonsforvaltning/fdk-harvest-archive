@@ -7,6 +7,7 @@ import io.mockk.verify
 import no.fdk.dataset.DatasetEvent
 import no.fdk.dataset.DatasetEventType
 import no.fdk.harvestarchive.archive.ArchiveType
+import no.fdk.harvestarchive.archive.ArchiveWrite
 import no.fdk.harvestarchive.archive.EventArchiveService
 import org.apache.avro.generic.GenericRecord
 import org.assertj.core.api.Assertions.assertThat
@@ -107,7 +108,7 @@ class KafkaDatasetEventCircuitBreakerTest {
         every { genericRecord.get("type") } returns DatasetEventType.DATASET_REASONED.name
         every { genericRecord.get("fdkId") } returns "test-dataset-123"
         every { genericRecord.get("timestamp") } returns 123L
-        every { eventArchiveService.saveGenericForTopic(any(), any()) } returns ProcessOutcome.Skipped(ArchiveType.DATASET)
+        every { eventArchiveService.saveGenericForTopic(any(), any()) } returns ArchiveWrite.Skipped(ArchiveType.DATASET)
 
         val processor = KafkaGenericProcessor(eventArchiveService)
         val breaker = KafkaDatasetEventCircuitBreaker(eventArchiveService, processor, circuitBreakerRegistration)
