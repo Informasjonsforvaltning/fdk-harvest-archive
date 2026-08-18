@@ -55,11 +55,7 @@ class ArchiveZipper(
         thresholdBytes: Long = zipThresholdBytes,
         maxFileCount: Int = zipMaxFileCount,
     ) {
-        val files =
-            Files
-                .walk(dirPath)
-                .filter { Files.isRegularFile(it) }
-                .toList()
+        val files = listRegularFiles(dirPath)
 
         val totalSize = files.sumOf { Files.size(it) }
         val fileCount = files.size.toLong()
@@ -131,20 +127,16 @@ class ArchiveZipper(
     }
 
     private fun refreshDirectorySnapshot(archiveType: ArchiveType, dirPath: Path) {
-        val remaining =
-            if (!Files.exists(dirPath)) {
-                emptyList()
-            } else {
-                Files
-                    .walk(dirPath)
-                    .filter { Files.isRegularFile(it) }
-                    .toList()
-            }
+        val remaining = if (Files.exists(dirPath)) listRegularFiles(dirPath) else emptyList()
         archiveMetrics.updateDirectorySnapshot(
             archiveType,
             remaining.sumOf { Files.size(it) },
             remaining.size.toLong(),
         )
+    }
+
+    private fun listRegularFiles(dirPath: Path): List<Path> = Files.walk(dirPath).use { paths ->
+        paths.filter { Files.isRegularFile(it) }.toList()
     }
 
     companion object {
