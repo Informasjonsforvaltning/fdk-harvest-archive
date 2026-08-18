@@ -101,7 +101,7 @@ class ArchiveZipperTest {
     }
 
     @Test
-    fun `zipIfOverThreshold updates directory snapshot gauges`(@TempDir tempDir: Path) {
+    fun `zipIfOverThreshold updates directory snapshot gauges when under threshold`(@TempDir tempDir: Path) {
         val datasetDir = tempDir.resolve("datasets")
         Files.createDirectories(datasetDir)
         Files.writeString(datasetDir.resolve("1_abc.json"), """{"data":"hello"}""")
@@ -113,6 +113,22 @@ class ArchiveZipperTest {
         val filesGauge = registry.find("harvest_archive_dir_files").tag("type", "datasets").gauge()
         assertThat(bytesGauge?.value()).isGreaterThan(0.0)
         assertThat(filesGauge?.value()).isEqualTo(1.0)
+    }
+
+    @Test
+    fun `zipIfOverThreshold refreshes directory snapshot gauges after zip`(@TempDir tempDir: Path) {
+        val datasetDir = tempDir.resolve("datasets")
+        Files.createDirectories(datasetDir)
+        Files.writeString(datasetDir.resolve("1_abc.json"), """{"data":"hello"}""")
+        Files.writeString(datasetDir.resolve("2_def.json"), """{"data":"world"}""")
+
+        val zipper = zipperFor(tempDir)
+        zipper.zipIfOverThreshold(ArchiveType.DATASET, datasetDir, thresholdBytes = 1L)
+
+        val bytesGauge = registry.find("harvest_archive_dir_bytes").tag("type", "datasets").gauge()
+        val filesGauge = registry.find("harvest_archive_dir_files").tag("type", "datasets").gauge()
+        assertThat(bytesGauge?.value()).isEqualTo(0.0)
+        assertThat(filesGauge?.value()).isEqualTo(0.0)
     }
 
     @Test
@@ -135,5 +151,8 @@ class ArchiveZipperTest {
         assertThat(
             registry.summary("harvest_archive_zip_files", "type", "datasets").totalAmount(),
         ).isEqualTo(2.0)
+        assertThat(
+            registry.find("harvest_archive_dir_files").tag("type", "datasets").gauge()?.value(),
+        ).isEqualTo(3.0)
     }
 }

@@ -125,7 +125,26 @@ class ArchiveZipper(
                 kotlin.time.Duration.ZERO,
             )
             LOGGER.error("Failed to create zip for directory {}", dirPath, e)
+        } finally {
+            refreshDirectorySnapshot(archiveType, dirPath)
         }
+    }
+
+    private fun refreshDirectorySnapshot(archiveType: ArchiveType, dirPath: Path) {
+        val remaining =
+            if (!Files.exists(dirPath)) {
+                emptyList()
+            } else {
+                Files
+                    .walk(dirPath)
+                    .filter { Files.isRegularFile(it) }
+                    .toList()
+            }
+        archiveMetrics.updateDirectorySnapshot(
+            archiveType,
+            remaining.sumOf { Files.size(it) },
+            remaining.size.toLong(),
+        )
     }
 
     companion object {
