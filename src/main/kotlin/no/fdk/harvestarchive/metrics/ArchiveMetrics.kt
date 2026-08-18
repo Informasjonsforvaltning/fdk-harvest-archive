@@ -53,14 +53,14 @@ class ArchiveMetrics(private val registry: MeterRegistry) {
             ).increment()
     }
 
-    fun recordZip(type: ArchiveType, status: ZipStatus, fileCount: Int, zipBytes: Long, duration: Duration) {
+    fun recordZip(type: ArchiveType, fileCount: Int, zipBytes: Long, duration: Duration) {
         registry
             .counter(
                 "harvest_archive_zip_total",
                 "type",
                 type.metricTag,
                 "status",
-                status.label,
+                ZipStatus.SUCCESS.label,
             ).increment()
         registry
             .summary("harvest_archive_zip_files", "type", type.metricTag)
@@ -69,7 +69,21 @@ class ArchiveMetrics(private val registry: MeterRegistry) {
             .summary("harvest_archive_zip_bytes", "type", type.metricTag)
             .record(zipBytes.toDouble())
         registry
-            .timer("harvest_archive_zip_time", "type", type.metricTag, "status", status.label)
+            .timer("harvest_archive_zip_time", "type", type.metricTag, "status", ZipStatus.SUCCESS.label)
+            .record(duration.toJavaDuration())
+    }
+
+    fun recordZipError(type: ArchiveType, duration: Duration) {
+        registry
+            .counter(
+                "harvest_archive_zip_total",
+                "type",
+                type.metricTag,
+                "status",
+                ZipStatus.ERROR.label,
+            ).increment()
+        registry
+            .timer("harvest_archive_zip_time", "type", type.metricTag, "status", ZipStatus.ERROR.label)
             .record(duration.toJavaDuration())
     }
 
@@ -125,7 +139,7 @@ class ArchiveMetrics(private val registry: MeterRegistry) {
 
     private fun dirFilesValue(type: ArchiveType): AtomicLong = dirFiles.computeIfAbsent(type) { AtomicLong(0) }
 
-    enum class ZipStatus(val label: String) {
+    private enum class ZipStatus(val label: String) {
         SUCCESS("success"),
         ERROR("error"),
     }

@@ -61,7 +61,7 @@ class ArchiveMetricsTest {
 
     @Test
     fun `recordZip increments zip counters and summaries`() {
-        metrics.recordZip(ArchiveType.SERVICE, ArchiveMetrics.ZipStatus.SUCCESS, 3, 256, 20.milliseconds)
+        metrics.recordZip(ArchiveType.SERVICE, 3, 256, 20.milliseconds)
 
         assertEquals(
             1.0,
@@ -80,6 +80,29 @@ class ArchiveMetricsTest {
             1L,
             registry.timer("harvest_archive_zip_time", "type", "services", "status", "success").count(),
         )
+    }
+
+    @Test
+    fun `recordZipError increments error counter and timer without summaries`() {
+        metrics.recordZipError(ArchiveType.SERVICE, 15.milliseconds)
+
+        assertEquals(
+            1.0,
+            registry
+                .counter(
+                    "harvest_archive_zip_total",
+                    "type",
+                    "services",
+                    "status",
+                    "error",
+                ).count(),
+        )
+        assertEquals(
+            1L,
+            registry.timer("harvest_archive_zip_time", "type", "services", "status", "error").count(),
+        )
+        assertEquals(0.0, registry.find("harvest_archive_zip_files").tag("type", "services").summary()?.totalAmount() ?: 0.0)
+        assertEquals(0.0, registry.find("harvest_archive_zip_bytes").tag("type", "services").summary()?.totalAmount() ?: 0.0)
     }
 
     @Test

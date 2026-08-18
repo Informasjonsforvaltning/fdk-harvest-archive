@@ -1,7 +1,6 @@
 package no.fdk.harvestarchive.archive
 
 import no.fdk.harvestarchive.metrics.ArchiveMetrics
-import no.fdk.harvestarchive.metrics.ArchiveMetrics.ZipStatus
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.scheduling.annotation.Scheduled
@@ -68,9 +67,9 @@ class ArchiveZipper(
         val filesToArchive = files.take(maxFileCount)
         if (filesToArchive.isEmpty()) return
 
-        try {
-            val timed =
-                measureTimedValue {
+        val timed =
+            measureTimedValue {
+                try {
                     val zipFileName = "${dirPath.fileName}-${System.currentTimeMillis()}.zip"
                     val zipPath = parent.resolve(zipFileName)
 
@@ -103,27 +102,33 @@ class ArchiveZipper(
                         filesToArchive.size,
                     )
 
-                    zipBytes
+                    ZipAttempt.Success(zipBytes)
+                } catch (e: Exception) {
+                    LOGGER.error("Failed to create zip for directory {}", dirPath, e)
+                    ZipAttempt.Failure
                 }
-            archiveMetrics.recordZip(
-                archiveType,
-                ZipStatus.SUCCESS,
-                filesToArchive.size,
-                timed.value,
-                timed.duration,
-            )
-        } catch (e: Exception) {
-            archiveMetrics.recordZip(
-                archiveType,
-                ZipStatus.ERROR,
-                0,
-                0,
-                kotlin.time.Duration.ZERO,
-            )
-            LOGGER.error("Failed to create zip for directory {}", dirPath, e)
+            }
+        try {
+            when (val result = timed.value) {
+                is ZipAttempt.Success ->
+                    archiveMetrics.recordZip(
+                        archiveType,
+                        filesToArchive.size,
+                        result.zipBytes,
+                        timed.duration,
+                    )
+
+                ZipAttempt.Failure -> archiveMetrics.recordZipError(archiveType, timed.duration)
+            }
         } finally {
             refreshDirectorySnapshot(archiveType, dirPath)
         }
+    }
+
+    private sealed class ZipAttempt {
+        data class Success(val zipBytes: Long) : ZipAttempt()
+
+        data object Failure : ZipAttempt()
     }
 
     private fun refreshDirectorySnapshot(archiveType: ArchiveType, dirPath: Path) {
