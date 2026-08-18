@@ -19,29 +19,27 @@ open class KafkaConceptEventCircuitBreaker(
     @param:Qualifier("conceptArchiveCircuitBreaker")
     private val circuitBreaker: CircuitBreaker,
 ) : KafkaCircuitBreakerApi {
-    override fun process(record: ConsumerRecord<String, Any>): ProcessOutcome {
+    override fun process(record: ConsumerRecord<String, Any>): ProcessOutcome = circuitBreaker.executeCallable {
         try {
-            return circuitBreaker.executeCallable {
-                when (val value = record.value()) {
-                    is ConceptEvent -> {
-                        if (value.type != ConceptEventType.CONCEPT_HARVESTED && value.type != ConceptEventType.CONCEPT_REMOVED) {
-                            LOGGER.debug("Skipping concept event with type {}.", value.type)
-                            return@executeCallable ProcessOutcome.Skipped(ARCHIVE_TYPE)
-                        }
-                        eventArchiveService.saveConcept(value)
-                        ProcessOutcome.Saved(ARCHIVE_TYPE)
+            when (val value = record.value()) {
+                is ConceptEvent -> {
+                    if (value.type != ConceptEventType.CONCEPT_HARVESTED && value.type != ConceptEventType.CONCEPT_REMOVED) {
+                        LOGGER.debug("Skipping concept event with type {}.", value.type)
+                        return@executeCallable ProcessOutcome.Skipped(ARCHIVE_TYPE)
                     }
+                    eventArchiveService.saveConcept(value)
+                    ProcessOutcome.Saved(ARCHIVE_TYPE)
+                }
 
-                    is GenericRecord -> genericProcessor.process(value, ARCHIVE_TYPE.topicName)
+                is GenericRecord -> genericProcessor.process(value, ARCHIVE_TYPE.topicName)
 
-                    else -> {
-                        LOGGER.warn(
-                            "Skipping unsupported concept record value type {} on topic {}",
-                            value?.javaClass?.name,
-                            record.topic(),
-                        )
-                        ProcessOutcome.Skipped(ARCHIVE_TYPE)
-                    }
+                else -> {
+                    LOGGER.warn(
+                        "Skipping unsupported concept record value type {} on topic {}",
+                        value?.javaClass?.name,
+                        record.topic(),
+                    )
+                    ProcessOutcome.Skipped(ARCHIVE_TYPE)
                 }
             }
         } catch (e: Exception) {
