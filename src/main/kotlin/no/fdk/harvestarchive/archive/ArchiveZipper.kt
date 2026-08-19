@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.nio.file.StandardCopyOption
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import kotlin.time.measureTimedValue
@@ -57,16 +58,23 @@ class ArchiveZipper(
                 try {
                     val zipFileName = "${dirPath.fileName}-${System.currentTimeMillis()}.zip"
                     val zipPath = parent.resolve(zipFileName)
+                    val tmpPath = parent.resolve("$zipFileName.tmp")
 
-                    ZipOutputStream(Files.newOutputStream(zipPath)).use { zipOut ->
-                        filesToArchive.forEach { file ->
-                            val entryName = dirPath.relativize(file).toString()
-                            zipOut.putNextEntry(ZipEntry(entryName))
-                            Files.newInputStream(file).use { input ->
-                                input.copyTo(zipOut)
+                    try {
+                        ZipOutputStream(Files.newOutputStream(tmpPath)).use { zipOut ->
+                            filesToArchive.forEach { file ->
+                                val entryName = dirPath.relativize(file).toString()
+                                zipOut.putNextEntry(ZipEntry(entryName))
+                                Files.newInputStream(file).use { input ->
+                                    input.copyTo(zipOut)
+                                }
+                                zipOut.closeEntry()
                             }
-                            zipOut.closeEntry()
                         }
+                        Files.move(tmpPath, zipPath, StandardCopyOption.ATOMIC_MOVE)
+                    } catch (e: Exception) {
+                        Files.deleteIfExists(tmpPath)
+                        throw e
                     }
 
                     filesToArchive.forEach { file ->

@@ -195,6 +195,14 @@ class ArchiveZipperTest {
         }
 
         assertThat(Files.exists(source)).isTrue()
+        val leftoverFiles =
+            Files.list(tempDir).use { paths ->
+                paths.filter {
+                    val name = it.fileName.toString()
+                    name.endsWith(".zip") || name.endsWith(".tmp")
+                }.toList()
+            }
+        assertThat(leftoverFiles).isEmpty()
         assertThat(
             registry.counter("harvest_archive_zip_total", "type", "datasets", "status", "error").count(),
         ).isEqualTo(1.0)
