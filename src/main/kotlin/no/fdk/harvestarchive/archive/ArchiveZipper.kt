@@ -89,17 +89,7 @@ class ArchiveZipper(
                         }
                     }
 
-                    val zipBytes = Files.size(zipPath)
-
-                    LOGGER.debug(
-                        "Created zip archive {} for directory {} ({} bytes, {} files).",
-                        zipPath.fileName,
-                        dirPath,
-                        zipBytes,
-                        filesToArchive.size,
-                    )
-
-                    ZipAttempt.Success(zipBytes)
+                    ZipAttempt.Success(zipPath)
                 } catch (e: Exception) {
                     LOGGER.error("Failed to create zip for directory {}", dirPath, e)
                     ZipAttempt.Failure
@@ -107,13 +97,22 @@ class ArchiveZipper(
             }
         try {
             when (val result = timed.value) {
-                is ZipAttempt.Success ->
+                is ZipAttempt.Success -> {
+                    val zipBytes = Files.size(result.zipPath)
+                    LOGGER.debug(
+                        "Created zip archive {} for directory {} ({} bytes, {} files).",
+                        result.zipPath.fileName,
+                        dirPath,
+                        zipBytes,
+                        filesToArchive.size,
+                    )
                     archiveMetrics.recordZip(
                         archiveType,
                         filesToArchive.size,
-                        result.zipBytes,
+                        zipBytes,
                         timed.duration,
                     )
+                }
 
                 ZipAttempt.Failure -> archiveMetrics.recordZipError(archiveType, timed.duration)
             }
@@ -123,7 +122,7 @@ class ArchiveZipper(
     }
 
     private sealed class ZipAttempt {
-        data class Success(val zipBytes: Long) : ZipAttempt()
+        data class Success(val zipPath: Path) : ZipAttempt()
 
         data object Failure : ZipAttempt()
     }
