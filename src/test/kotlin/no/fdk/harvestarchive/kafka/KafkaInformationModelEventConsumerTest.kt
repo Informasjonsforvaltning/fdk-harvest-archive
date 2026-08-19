@@ -97,13 +97,13 @@ class KafkaInformationModelEventConsumerTest {
     @Test
     fun `consumeInformationModelEvent acknowledges skipped events`() {
         val record: ConsumerRecord<String, Any> = ConsumerRecord("information-model-events", 0, 0L, "key", "skip")
-        every { circuitBreaker.process(any()) } returns ProcessOutcome.Skipped(ArchiveType.INFORMATION_MODEL)
+        every { circuitBreaker.process(any()) } returns ProcessOutcome.Skipped(ArchiveType.INFORMATION_MODEL, "unsupported_payload")
 
         consumer.consumeInformationModelEvent(record, ack)
 
         verify(exactly = 1) { ack.acknowledge() }
         verify(exactly = 0) { ack.nack(any<Duration>()) }
-        registry.assertEventProcessed(ArchiveType.INFORMATION_MODEL, "skipped")
+        registry.assertEventProcessed(ArchiveType.INFORMATION_MODEL, "skipped", "unsupported_payload")
     }
 
     @Test
@@ -116,7 +116,7 @@ class KafkaInformationModelEventConsumerTest {
 
         verify(exactly = 1) { ack.nack(Duration.ZERO) }
         verify(exactly = 0) { ack.acknowledge() }
-        registry.assertEventProcessed(ArchiveType.INFORMATION_MODEL, "circuit_open")
+        registry.assertEventProcessed(ArchiveType.INFORMATION_MODEL, "nacked", "circuit_open")
     }
 
     @Test
@@ -140,6 +140,6 @@ class KafkaInformationModelEventConsumerTest {
         verify(exactly = 1) { circuitBreaker.process(record) }
         verify(exactly = 1) { ack.nack(Duration.ZERO) }
         verify(exactly = 0) { ack.acknowledge() }
-        registry.assertEventProcessed(ArchiveType.INFORMATION_MODEL, "nacked")
+        registry.assertEventProcessed(ArchiveType.INFORMATION_MODEL, "nacked", "processing_error")
     }
 }

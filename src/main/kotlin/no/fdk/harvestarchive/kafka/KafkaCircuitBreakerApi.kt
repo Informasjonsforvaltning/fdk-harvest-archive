@@ -15,12 +15,12 @@ interface KafkaCircuitBreakerApi {
 sealed class ProcessOutcome(open val archiveType: ArchiveType?) {
     data class Saved(override val archiveType: ArchiveType) : ProcessOutcome(archiveType)
 
-    data class Skipped(override val archiveType: ArchiveType?) : ProcessOutcome(archiveType)
+    data class Skipped(override val archiveType: ArchiveType?, val reason: String) : ProcessOutcome(archiveType)
 
     companion object {
         fun from(write: ArchiveWrite): ProcessOutcome = when (write) {
             is ArchiveWrite.Saved -> Saved(write.archiveType)
-            is ArchiveWrite.Skipped -> Skipped(write.archiveType)
+            is ArchiveWrite.Skipped -> Skipped(write.archiveType, write.reason)
         }
     }
 }

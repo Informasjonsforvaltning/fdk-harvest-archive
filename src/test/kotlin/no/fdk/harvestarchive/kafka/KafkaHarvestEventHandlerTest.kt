@@ -31,7 +31,7 @@ class KafkaHarvestEventHandlerTest {
         handler.process(record, ack)
 
         verify(exactly = 1) { ack.nack(Duration.ZERO) }
-        registry.assertEventProcessed(ArchiveType.DATASET, "nacked")
+        registry.assertEventProcessed(ArchiveType.DATASET, "nacked", "processing_error")
         registry.assertEventProcessed(ArchiveType.DATASET, "acked", count = 0.0)
     }
 
@@ -44,6 +44,6 @@ class KafkaHarvestEventHandlerTest {
 
         verify(exactly = 1) { ack.nack(Duration.ZERO) }
         verify(exactly = 0) { ack.acknowledge() }
-        registry.assertEventProcessed(ArchiveType.DATASET, "circuit_open")
+        registry.assertEventProcessed(ArchiveType.DATASET, "nacked", "circuit_open")
     }
 }

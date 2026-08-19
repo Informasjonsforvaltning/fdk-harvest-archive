@@ -97,13 +97,13 @@ class KafkaEventEventConsumerTest {
     @Test
     fun `consumeEventEvent acknowledges skipped events`() {
         val record: ConsumerRecord<String, Any> = ConsumerRecord("event-events", 0, 0L, "key", "skip")
-        every { circuitBreaker.process(any()) } returns ProcessOutcome.Skipped(ArchiveType.EVENT)
+        every { circuitBreaker.process(any()) } returns ProcessOutcome.Skipped(ArchiveType.EVENT, "unsupported_payload")
 
         consumer.consumeEventEvent(record, ack)
 
         verify(exactly = 1) { ack.acknowledge() }
         verify(exactly = 0) { ack.nack(any<Duration>()) }
-        registry.assertEventProcessed(ArchiveType.EVENT, "skipped")
+        registry.assertEventProcessed(ArchiveType.EVENT, "skipped", "unsupported_payload")
     }
 
     @Test
@@ -116,7 +116,7 @@ class KafkaEventEventConsumerTest {
 
         verify(exactly = 1) { ack.nack(Duration.ZERO) }
         verify(exactly = 0) { ack.acknowledge() }
-        registry.assertEventProcessed(ArchiveType.EVENT, "circuit_open")
+        registry.assertEventProcessed(ArchiveType.EVENT, "nacked", "circuit_open")
     }
 
     @Test
@@ -140,6 +140,6 @@ class KafkaEventEventConsumerTest {
         verify(exactly = 1) { circuitBreaker.process(record) }
         verify(exactly = 1) { ack.nack(Duration.ZERO) }
         verify(exactly = 0) { ack.acknowledge() }
-        registry.assertEventProcessed(ArchiveType.EVENT, "nacked")
+        registry.assertEventProcessed(ArchiveType.EVENT, "nacked", "processing_error")
     }
 }

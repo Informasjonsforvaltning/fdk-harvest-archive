@@ -108,7 +108,8 @@ class ArchiveMetricsTest {
     @Test
     fun `recordEventProcessed increments processing total`() {
         metrics.recordEventProcessed(ArchiveType.DATASET, ArchiveMetrics.EventProcessingResult.ACKED)
-        metrics.recordEventProcessed(null, ArchiveMetrics.EventProcessingResult.CIRCUIT_OPEN)
+        metrics.recordEventProcessed(null, ArchiveMetrics.EventProcessingResult.NACKED, "circuit_open")
+        metrics.recordEventProcessed(ArchiveType.CONCEPT, ArchiveMetrics.EventProcessingResult.SKIPPED, "unsupported_event_type")
 
         assertEquals(
             1.0,
@@ -119,6 +120,8 @@ class ArchiveMetricsTest {
                     "datasets",
                     "result",
                     "acked",
+                    "reason",
+                    "",
                 ).count(),
         )
         assertEquals(
@@ -129,7 +132,22 @@ class ArchiveMetricsTest {
                     "type",
                     "unknown",
                     "result",
+                    "nacked",
+                    "reason",
                     "circuit_open",
+                ).count(),
+        )
+        assertEquals(
+            1.0,
+            registry
+                .counter(
+                    "harvest_archive_event_processing_total",
+                    "type",
+                    "concepts",
+                    "result",
+                    "skipped",
+                    "reason",
+                    "unsupported_event_type",
                 ).count(),
         )
     }

@@ -100,10 +100,11 @@ class KafkaGenericProcessorTest {
     fun `process returns Skipped when saveGenericForTopic skips the payload`() {
         val genericRecord = mockk<GenericRecord>(relaxed = true)
         every { genericRecord.get("type") } returns "DATASET_REASONED"
-        every { eventArchiveService.saveGenericForTopic(any(), any()) } returns ArchiveWrite.Skipped(ArchiveType.DATASET)
+        every { eventArchiveService.saveGenericForTopic(any(), any()) } returns
+            ArchiveWrite.Skipped(ArchiveType.DATASET, "unsupported_event_type")
 
         val outcome = processor.process(genericRecord, "dataset-events")
 
-        assertThat(outcome).isEqualTo(ProcessOutcome.Skipped(ArchiveType.DATASET))
+        assertThat(outcome).isEqualTo(ProcessOutcome.Skipped(ArchiveType.DATASET, "unsupported_event_type"))
     }
 }

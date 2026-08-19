@@ -60,7 +60,7 @@ class KafkaConceptEventCircuitBreakerTest {
 
         val outcome = circuitBreaker.process(recordFor(event))
 
-        assertThat(outcome).isEqualTo(ProcessOutcome.Skipped(ArchiveType.CONCEPT))
+        assertThat(outcome).isEqualTo(ProcessOutcome.Skipped(ArchiveType.CONCEPT, "unsupported_event_type"))
         verify(exactly = 0) { eventArchiveService.saveConcept(any()) }
     }
 
@@ -96,7 +96,7 @@ class KafkaConceptEventCircuitBreakerTest {
 
         val outcome = circuitBreaker.process(record)
 
-        assertThat(outcome).isEqualTo(ProcessOutcome.Skipped(ArchiveType.CONCEPT))
+        assertThat(outcome).isEqualTo(ProcessOutcome.Skipped(ArchiveType.CONCEPT, "unsupported_payload"))
         verify(exactly = 0) { eventArchiveService.saveConcept(any()) }
         verify(exactly = 0) { genericProcessor.process(any(), any()) }
     }

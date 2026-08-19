@@ -272,7 +272,7 @@ class EventArchiveServiceTest {
 
         val outcome = service.saveGenericForTopic("dataset-events", payload)
 
-        assertThat(outcome).isEqualTo(ArchiveWrite.Skipped(ArchiveType.DATASET))
+        assertThat(outcome).isEqualTo(ArchiveWrite.Skipped(ArchiveType.DATASET, "unsupported_event_type"))
         val expectedFile = Path.of(datasetDir).resolve("1_skip-me.json")
         assertThat(expectedFile).doesNotExist()
     }
@@ -290,7 +290,7 @@ class EventArchiveServiceTest {
 
         val outcome = service.saveGenericForTopic("unknown-topic", payload)
 
-        assertThat(outcome).isEqualTo(ArchiveWrite.Skipped(null))
+        assertThat(outcome).isEqualTo(ArchiveWrite.Skipped(null, "unknown_topic"))
         val wouldBeFile = Path.of(datasetDir).resolve("1_no-topic.json")
         assertThat(wouldBeFile).doesNotExist()
     }

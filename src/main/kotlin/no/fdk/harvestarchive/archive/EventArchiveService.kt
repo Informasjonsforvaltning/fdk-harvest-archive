@@ -30,15 +30,15 @@ class EventArchiveService(private val archiveDirectories: ArchiveDirectories, pr
     fun saveGenericForTopic(topic: String, payload: Map<String, Any?>): ArchiveWrite {
         val archiveType = ArchiveType.fromTopic(topic)
         if (archiveType == null) {
-            return ArchiveWrite.Skipped(null)
+            return ArchiveWrite.Skipped(null, "unknown_topic")
         }
         val eventType = payload["type"]?.toString()
         if (eventType == null) {
-            return ArchiveWrite.Skipped(archiveType)
+            return ArchiveWrite.Skipped(archiveType, "missing_event_type")
         }
         if (!archiveType.allowsEventType(eventType)) {
             LOGGER.debug("Skipping generic event with type {} for topic {}", eventType, topic)
-            return ArchiveWrite.Skipped(archiveType)
+            return ArchiveWrite.Skipped(archiveType, "unsupported_event_type")
         }
         savePayload(archiveType, payload)
         return ArchiveWrite.Saved(archiveType)

@@ -60,7 +60,7 @@ class KafkaInformationModelEventCircuitBreakerTest {
 
         val outcome = circuitBreaker.process(recordFor(event))
 
-        assertThat(outcome).isEqualTo(ProcessOutcome.Skipped(ArchiveType.INFORMATION_MODEL))
+        assertThat(outcome).isEqualTo(ProcessOutcome.Skipped(ArchiveType.INFORMATION_MODEL, "unsupported_event_type"))
         verify(exactly = 0) { eventArchiveService.saveInformationModel(any()) }
     }
 
@@ -96,7 +96,7 @@ class KafkaInformationModelEventCircuitBreakerTest {
 
         val outcome = circuitBreaker.process(record)
 
-        assertThat(outcome).isEqualTo(ProcessOutcome.Skipped(ArchiveType.INFORMATION_MODEL))
+        assertThat(outcome).isEqualTo(ProcessOutcome.Skipped(ArchiveType.INFORMATION_MODEL, "unsupported_payload"))
         verify(exactly = 0) { eventArchiveService.saveInformationModel(any()) }
         verify(exactly = 0) { genericProcessor.process(any(), any()) }
     }

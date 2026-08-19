@@ -18,19 +18,24 @@ internal class KafkaHarvestEventHandler(
     fun process(record: ConsumerRecord<String, Any>, ack: Acknowledgment) {
         try {
             val outcome = circuitBreaker.process(record)
-            val result = when (outcome) {
-                is ProcessOutcome.Saved -> EventProcessingResult.ACKED
-                is ProcessOutcome.Skipped -> EventProcessingResult.SKIPPED
+            when (outcome) {
+                is ProcessOutcome.Saved -> {
+                    ack.acknowledge()
+                    archiveMetrics.recordEventProcessed(outcome.archiveType, EventProcessingResult.ACKED)
+                }
+
+                is ProcessOutcome.Skipped -> {
+                    ack.acknowledge()
+                    archiveMetrics.recordEventProcessed(outcome.archiveType, EventProcessingResult.SKIPPED, outcome.reason)
+                }
             }
-            ack.acknowledge()
-            archiveMetrics.recordEventProcessed(outcome.archiveType, result)
         } catch (_: CallNotPermittedException) {
             ack.nack(Duration.ZERO)
-            archiveMetrics.recordEventProcessed(archiveType, EventProcessingResult.CIRCUIT_OPEN)
+            archiveMetrics.recordEventProcessed(archiveType, EventProcessingResult.NACKED, "circuit_open")
         } catch (e: Exception) {
             LOGGER.error("Error processing harvest event", e)
             ack.nack(Duration.ZERO)
-            archiveMetrics.recordEventProcessed(archiveType, EventProcessingResult.NACKED)
+            archiveMetrics.recordEventProcessed(archiveType, EventProcessingResult.NACKED, "processing_error")
         }
     }
 

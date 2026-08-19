@@ -97,13 +97,13 @@ class KafkaConceptEventConsumerTest {
     @Test
     fun `consumeConceptEvent acknowledges skipped events`() {
         val record: ConsumerRecord<String, Any> = ConsumerRecord("concept-events", 0, 0L, "key", "not-a-concept")
-        every { circuitBreaker.process(any()) } returns ProcessOutcome.Skipped(ArchiveType.CONCEPT)
+        every { circuitBreaker.process(any()) } returns ProcessOutcome.Skipped(ArchiveType.CONCEPT, "unsupported_payload")
 
         consumer.consumeConceptEvent(record, ack)
 
         verify(exactly = 1) { ack.acknowledge() }
         verify(exactly = 0) { ack.nack(any<Duration>()) }
-        registry.assertEventProcessed(ArchiveType.CONCEPT, "skipped")
+        registry.assertEventProcessed(ArchiveType.CONCEPT, "skipped", "unsupported_payload")
     }
 
     @Test
@@ -116,7 +116,7 @@ class KafkaConceptEventConsumerTest {
 
         verify(exactly = 1) { ack.nack(Duration.ZERO) }
         verify(exactly = 0) { ack.acknowledge() }
-        registry.assertEventProcessed(ArchiveType.CONCEPT, "circuit_open")
+        registry.assertEventProcessed(ArchiveType.CONCEPT, "nacked", "circuit_open")
     }
 
     @Test
@@ -140,6 +140,6 @@ class KafkaConceptEventConsumerTest {
         verify(exactly = 1) { circuitBreaker.process(record) }
         verify(exactly = 1) { ack.nack(Duration.ZERO) }
         verify(exactly = 0) { ack.acknowledge() }
-        registry.assertEventProcessed(ArchiveType.CONCEPT, "nacked")
+        registry.assertEventProcessed(ArchiveType.CONCEPT, "nacked", "processing_error")
     }
 }

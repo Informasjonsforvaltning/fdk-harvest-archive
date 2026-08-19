@@ -97,13 +97,13 @@ class KafkaDataServiceEventConsumerTest {
     @Test
     fun `consumeDataServiceEvent acknowledges skipped events`() {
         val record: ConsumerRecord<String, Any> = ConsumerRecord("data-service-events", 0, 0L, "key", "skip")
-        every { circuitBreaker.process(any()) } returns ProcessOutcome.Skipped(ArchiveType.DATA_SERVICE)
+        every { circuitBreaker.process(any()) } returns ProcessOutcome.Skipped(ArchiveType.DATA_SERVICE, "unsupported_payload")
 
         consumer.consumeDataServiceEvent(record, ack)
 
         verify(exactly = 1) { ack.acknowledge() }
         verify(exactly = 0) { ack.nack(any<Duration>()) }
-        registry.assertEventProcessed(ArchiveType.DATA_SERVICE, "skipped")
+        registry.assertEventProcessed(ArchiveType.DATA_SERVICE, "skipped", "unsupported_payload")
     }
 
     @Test
@@ -116,7 +116,7 @@ class KafkaDataServiceEventConsumerTest {
 
         verify(exactly = 1) { ack.nack(Duration.ZERO) }
         verify(exactly = 0) { ack.acknowledge() }
-        registry.assertEventProcessed(ArchiveType.DATA_SERVICE, "circuit_open")
+        registry.assertEventProcessed(ArchiveType.DATA_SERVICE, "nacked", "circuit_open")
     }
 
     @Test
@@ -140,6 +140,6 @@ class KafkaDataServiceEventConsumerTest {
         verify(exactly = 1) { circuitBreaker.process(record) }
         verify(exactly = 1) { ack.nack(Duration.ZERO) }
         verify(exactly = 0) { ack.acknowledge() }
-        registry.assertEventProcessed(ArchiveType.DATA_SERVICE, "nacked")
+        registry.assertEventProcessed(ArchiveType.DATA_SERVICE, "nacked", "processing_error")
     }
 }

@@ -87,7 +87,7 @@ class ArchiveMetrics(private val registry: MeterRegistry) {
             .record(duration.toJavaDuration())
     }
 
-    fun recordEventProcessed(type: ArchiveType?, result: EventProcessingResult) {
+    fun recordEventProcessed(type: ArchiveType?, result: EventProcessingResult, reason: String = "") {
         registry
             .counter(
                 "harvest_archive_event_processing_total",
@@ -95,6 +95,8 @@ class ArchiveMetrics(private val registry: MeterRegistry) {
                 type?.metricTag ?: "unknown",
                 "result",
                 result.label,
+                "reason",
+                reason,
             ).increment()
     }
 
@@ -148,6 +150,5 @@ class ArchiveMetrics(private val registry: MeterRegistry) {
         ACKED("acked"),
         NACKED("nacked"),
         SKIPPED("skipped"),
-        CIRCUIT_OPEN("circuit_open"),
     }
 }

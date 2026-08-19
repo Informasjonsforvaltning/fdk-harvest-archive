@@ -24,7 +24,7 @@ open class KafkaConceptEventCircuitBreaker(
                 is ConceptEvent -> {
                     if (!ARCHIVE_TYPE.allowsEventType(value.type.name)) {
                         LOGGER.debug("Skipping concept event with type {}.", value.type)
-                        return@executeCallable ProcessOutcome.Skipped(ARCHIVE_TYPE)
+                        return@executeCallable ProcessOutcome.Skipped(ARCHIVE_TYPE, "unsupported_event_type")
                     }
                     eventArchiveService.saveConcept(value)
                     ProcessOutcome.Saved(ARCHIVE_TYPE)
@@ -38,7 +38,7 @@ open class KafkaConceptEventCircuitBreaker(
                         value?.javaClass?.name,
                         record.topic(),
                     )
-                    ProcessOutcome.Skipped(ARCHIVE_TYPE)
+                    ProcessOutcome.Skipped(ARCHIVE_TYPE, "unsupported_payload")
                 }
             }
         } catch (e: Exception) {

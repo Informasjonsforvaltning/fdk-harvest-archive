@@ -61,7 +61,7 @@ class KafkaDatasetEventCircuitBreakerTest {
 
         val outcome = circuitBreaker.process(recordFor(event))
 
-        assertThat(outcome).isEqualTo(ProcessOutcome.Skipped(ArchiveType.DATASET))
+        assertThat(outcome).isEqualTo(ProcessOutcome.Skipped(ArchiveType.DATASET, "unsupported_event_type"))
         verify(exactly = 0) { eventArchiveService.saveDataset(any()) }
     }
 
@@ -97,7 +97,7 @@ class KafkaDatasetEventCircuitBreakerTest {
 
         val outcome = circuitBreaker.process(record)
 
-        assertThat(outcome).isEqualTo(ProcessOutcome.Skipped(ArchiveType.DATASET))
+        assertThat(outcome).isEqualTo(ProcessOutcome.Skipped(ArchiveType.DATASET, "unsupported_payload"))
         verify(exactly = 0) { eventArchiveService.saveDataset(any()) }
         verify(exactly = 0) { genericProcessor.process(any(), any()) }
     }
@@ -108,7 +108,8 @@ class KafkaDatasetEventCircuitBreakerTest {
         every { genericRecord.get("type") } returns DatasetEventType.DATASET_REASONED.name
         every { genericRecord.get("fdkId") } returns "test-dataset-123"
         every { genericRecord.get("timestamp") } returns 123L
-        every { eventArchiveService.saveGenericForTopic(any(), any()) } returns ArchiveWrite.Skipped(ArchiveType.DATASET)
+        every { eventArchiveService.saveGenericForTopic(any(), any()) } returns
+            ArchiveWrite.Skipped(ArchiveType.DATASET, "unsupported_event_type")
 
         val processor = KafkaGenericProcessor(eventArchiveService)
         val breaker = KafkaDatasetEventCircuitBreaker(eventArchiveService, processor, circuitBreakerRegistration)
@@ -123,7 +124,7 @@ class KafkaDatasetEventCircuitBreakerTest {
 
         val outcome = breaker.process(record)
 
-        assertThat(outcome).isEqualTo(ProcessOutcome.Skipped(ArchiveType.DATASET))
+        assertThat(outcome).isEqualTo(ProcessOutcome.Skipped(ArchiveType.DATASET, "unsupported_event_type"))
         verify(exactly = 0) { eventArchiveService.saveDataset(any()) }
     }
 

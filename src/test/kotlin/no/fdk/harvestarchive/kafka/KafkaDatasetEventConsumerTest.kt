@@ -98,13 +98,13 @@ class KafkaDatasetEventConsumerTest {
     fun `consumeDatasetEvent acknowledges skipped events`() {
         val record: ConsumerRecord<String, Any> = ConsumerRecord("dataset-events", 0, 0L, "key", "not-a-dataset")
 
-        every { circuitBreaker.process(any()) } returns ProcessOutcome.Skipped(ArchiveType.DATASET)
+        every { circuitBreaker.process(any()) } returns ProcessOutcome.Skipped(ArchiveType.DATASET, "unsupported_payload")
 
         consumer.consumeDatasetEvent(record, ack)
 
         verify(exactly = 1) { ack.acknowledge() }
         verify(exactly = 0) { ack.nack(any<Duration>()) }
-        registry.assertEventProcessed(ArchiveType.DATASET, "skipped")
+        registry.assertEventProcessed(ArchiveType.DATASET, "skipped", "unsupported_payload")
         assertThat(registry.find("harvest_archive_skipped_total").counter()).isNull()
     }
 
@@ -119,7 +119,7 @@ class KafkaDatasetEventConsumerTest {
 
         verify(exactly = 1) { ack.nack(Duration.ZERO) }
         verify(exactly = 0) { ack.acknowledge() }
-        registry.assertEventProcessed(ArchiveType.DATASET, "circuit_open")
+        registry.assertEventProcessed(ArchiveType.DATASET, "nacked", "circuit_open")
     }
 
     @Test
@@ -143,6 +143,6 @@ class KafkaDatasetEventConsumerTest {
         verify(exactly = 1) { circuitBreaker.process(record) }
         verify(exactly = 1) { ack.nack(Duration.ZERO) }
         verify(exactly = 0) { ack.acknowledge() }
-        registry.assertEventProcessed(ArchiveType.DATASET, "nacked")
+        registry.assertEventProcessed(ArchiveType.DATASET, "nacked", "processing_error")
     }
 }
