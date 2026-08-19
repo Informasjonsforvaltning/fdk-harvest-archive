@@ -27,9 +27,13 @@ class ArchiveZipper(
     @Scheduled(fixedDelayString = "\${app.archive.zip-check-interval-ms}")
     fun checkAndZipAll() {
         archiveDirectories.forEach { archiveType, dir ->
-            val dirPath = Paths.get(dir)
-            if (Files.exists(dirPath)) {
-                zipIfOverThreshold(archiveType, dirPath)
+            try {
+                val dirPath = Paths.get(dir)
+                if (Files.exists(dirPath)) {
+                    zipIfOverThreshold(archiveType, dirPath)
+                }
+            } catch (e: Exception) {
+                LOGGER.error("Failed to check archive dir {} for {}", dir, archiveType, e)
             }
         }
     }

@@ -179,6 +179,33 @@ class ArchiveZipperTest {
     }
 
     @Test
+    fun `checkAndZipAll continues processing remaining directories when one fails`(@TempDir tempDir: Path) {
+        assumeTrue(FileSystems.getDefault().supportedFileAttributeViews().contains("posix"))
+
+        val datasetDir = tempDir.resolve("datasets")
+        val conceptDir = tempDir.resolve("concepts")
+        Files.createDirectories(datasetDir)
+        Files.createDirectories(conceptDir)
+
+        val poisoned = datasetDir.resolve("1_abc.json")
+        Files.writeString(poisoned, """{"type":"DATASET_HARVESTED"}""")
+        Files.setPosixFilePermissions(poisoned, PosixFilePermissions.fromString("---------"))
+
+        Files.writeString(conceptDir.resolve("1_def.json"), """{"type":"CONCEPT_HARVESTED"}""")
+
+        try {
+            zipperFor(tempDir, zipThresholdBytes = 1L).checkAndZipAll()
+        } finally {
+            Files.setPosixFilePermissions(poisoned, PosixFilePermissions.fromString("rw-r--r--"))
+        }
+
+        assertThat(Files.list(conceptDir).use { it.toList() }).isEmpty()
+        assertThat(
+            registry.counter("harvest_archive_zip_total", "type", "concepts", "status", "success").count(),
+        ).isEqualTo(1.0)
+    }
+
+    @Test
     fun `zipIfOverThreshold records zip error metrics when reading a file fails`(@TempDir tempDir: Path) {
         assumeTrue(FileSystems.getDefault().supportedFileAttributeViews().contains("posix"))
 
