@@ -1,8 +1,14 @@
 package no.fdk.harvestarchive.kafka
 
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException
+import io.github.resilience4j.circuitbreaker.CircuitBreaker
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import no.fdk.harvestarchive.archive.ArchiveType
+import no.fdk.harvestarchive.metrics.ArchiveMetrics
+import no.fdk.harvestarchive.metrics.assertEventProcessed
 import no.fdk.informationmodel.InformationModelEvent
 import no.fdk.informationmodel.InformationModelEventType
 import org.apache.avro.generic.GenericRecord
@@ -16,7 +22,8 @@ import java.time.Duration
 @Tag("unit")
 class KafkaInformationModelEventConsumerTest {
     private val circuitBreaker: KafkaInformationModelEventCircuitBreaker = mockk()
-    private val consumer = KafkaInformationModelEventConsumer(circuitBreaker)
+    private val registry = SimpleMeterRegistry()
+    private val consumer = KafkaInformationModelEventConsumer(circuitBreaker, ArchiveMetrics(registry))
     private val ack: Acknowledgment = mockk(relaxed = true)
 
     @Test
@@ -31,13 +38,14 @@ class KafkaInformationModelEventConsumerTest {
         val genericRecord = mockk<GenericRecord>(relaxed = true)
         val record: ConsumerRecord<String, Any> = ConsumerRecord("information-model-events", 0, 0L, "key", genericRecord)
 
-        every { circuitBreaker.process(any()) } returns Unit
+        every { circuitBreaker.process(any()) } returns ProcessOutcome.Saved(no.fdk.harvestarchive.archive.ArchiveType.INFORMATION_MODEL)
 
         consumer.consumeInformationModelEvent(record, ack)
 
         verify(exactly = 1) { circuitBreaker.process(record) }
         verify(exactly = 1) { ack.acknowledge() }
         verify(exactly = 0) { ack.nack(any<Duration>()) }
+        registry.assertEventProcessed(ArchiveType.INFORMATION_MODEL, "acked")
     }
 
     @Test
@@ -54,7 +62,7 @@ class KafkaInformationModelEventConsumerTest {
                 .build()
         val record: ConsumerRecord<String, Any> = ConsumerRecord("information-model-events", 0, 0L, "key", event as Any)
 
-        every { circuitBreaker.process(any()) } returns Unit
+        every { circuitBreaker.process(any()) } returns ProcessOutcome.Saved(no.fdk.harvestarchive.archive.ArchiveType.INFORMATION_MODEL)
 
         consumer.consumeInformationModelEvent(record, ack)
 
@@ -77,13 +85,38 @@ class KafkaInformationModelEventConsumerTest {
                 .build()
         val record: ConsumerRecord<String, Any> = ConsumerRecord("information-model-events", 0, 0L, "key", event as Any)
 
-        every { circuitBreaker.process(any()) } returns Unit
+        every { circuitBreaker.process(any()) } returns ProcessOutcome.Saved(no.fdk.harvestarchive.archive.ArchiveType.INFORMATION_MODEL)
 
         consumer.consumeInformationModelEvent(record, ack)
 
         verify(exactly = 1) { circuitBreaker.process(record) }
         verify(exactly = 1) { ack.acknowledge() }
         verify(exactly = 0) { ack.nack(any<Duration>()) }
+    }
+
+    @Test
+    fun `consumeInformationModelEvent acknowledges skipped events`() {
+        val record: ConsumerRecord<String, Any> = ConsumerRecord("information-model-events", 0, 0L, "key", "skip")
+        every { circuitBreaker.process(any()) } returns ProcessOutcome.Skipped(ArchiveType.INFORMATION_MODEL, "unsupported_payload")
+
+        consumer.consumeInformationModelEvent(record, ack)
+
+        verify(exactly = 1) { ack.acknowledge() }
+        verify(exactly = 0) { ack.nack(any<Duration>()) }
+        registry.assertEventProcessed(ArchiveType.INFORMATION_MODEL, "skipped", "unsupported_payload")
+    }
+
+    @Test
+    fun `consumeInformationModelEvent nacks on circuit breaker open`() {
+        val record: ConsumerRecord<String, Any> = ConsumerRecord("information-model-events", 0, 0L, "key", "any")
+        val cb = CircuitBreaker.ofDefaults("dummy")
+        every { circuitBreaker.process(any()) } throws CallNotPermittedException.createCallNotPermittedException(cb)
+
+        consumer.consumeInformationModelEvent(record, ack)
+
+        verify(exactly = 1) { ack.nack(Duration.ZERO) }
+        verify(exactly = 0) { ack.acknowledge() }
+        registry.assertEventProcessed(ArchiveType.INFORMATION_MODEL, "nacked", "circuit_open")
     }
 
     @Test
@@ -107,5 +140,6 @@ class KafkaInformationModelEventConsumerTest {
         verify(exactly = 1) { circuitBreaker.process(record) }
         verify(exactly = 1) { ack.nack(Duration.ZERO) }
         verify(exactly = 0) { ack.acknowledge() }
+        registry.assertEventProcessed(ArchiveType.INFORMATION_MODEL, "nacked", "processing_error")
     }
 }

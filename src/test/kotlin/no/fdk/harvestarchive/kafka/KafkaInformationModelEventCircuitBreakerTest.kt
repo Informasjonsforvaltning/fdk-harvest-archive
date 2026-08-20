@@ -4,9 +4,12 @@ import io.github.resilience4j.circuitbreaker.CircuitBreaker
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import no.fdk.harvestarchive.archive.ArchiveType
 import no.fdk.harvestarchive.archive.EventArchiveService
 import no.fdk.informationmodel.InformationModelEvent
 import no.fdk.informationmodel.InformationModelEventType
+import org.apache.avro.generic.GenericRecord
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
@@ -23,7 +26,7 @@ class KafkaInformationModelEventCircuitBreakerTest {
             .ConsumerRecord("information-model-events", 0, 0L, "key", event as Any)
 
     @Test
-    fun `process calls eventArchiveService saveInformationModel with event`() {
+    fun `process calls eventArchiveService saveInformationModel with event and returns Saved`() {
         val event =
             InformationModelEvent
                 .newBuilder()
@@ -36,13 +39,14 @@ class KafkaInformationModelEventCircuitBreakerTest {
                 .build()
         every { eventArchiveService.saveInformationModel(any()) } returns Unit
 
-        circuitBreaker.process(recordFor(event))
+        val outcome = circuitBreaker.process(recordFor(event))
 
+        assertThat(outcome).isEqualTo(ProcessOutcome.Saved(ArchiveType.INFORMATION_MODEL))
         verify(exactly = 1) { eventArchiveService.saveInformationModel(event) }
     }
 
     @Test
-    fun `reasoned events are skipped`() {
+    fun `reasoned events are skipped and return Skipped`() {
         val event =
             InformationModelEvent
                 .newBuilder()
@@ -54,8 +58,9 @@ class KafkaInformationModelEventCircuitBreakerTest {
                 .setTimestamp(123)
                 .build()
 
-        circuitBreaker.process(recordFor(event))
+        val outcome = circuitBreaker.process(recordFor(event))
 
+        assertThat(outcome).isEqualTo(ProcessOutcome.Skipped(ArchiveType.INFORMATION_MODEL, "unsupported_event_type"))
         verify(exactly = 0) { eventArchiveService.saveInformationModel(any()) }
     }
 
@@ -79,7 +84,7 @@ class KafkaInformationModelEventCircuitBreakerTest {
     }
 
     @Test
-    fun `unsupported value type is skipped and genericProcessor not called`() {
+    fun `unsupported value type returns Skipped`() {
         val record =
             org.apache.kafka.clients.consumer.ConsumerRecord<String, Any>(
                 "information-model-events",
@@ -89,9 +94,31 @@ class KafkaInformationModelEventCircuitBreakerTest {
                 mapOf("unexpected" to true),
             )
 
-        circuitBreaker.process(record)
+        val outcome = circuitBreaker.process(record)
 
+        assertThat(outcome).isEqualTo(ProcessOutcome.Skipped(ArchiveType.INFORMATION_MODEL, "unsupported_payload"))
         verify(exactly = 0) { eventArchiveService.saveInformationModel(any()) }
         verify(exactly = 0) { genericProcessor.process(any(), any()) }
+    }
+
+    @Test
+    fun `generic harvested record returns Saved from generic processor`() {
+        val genericRecord = mockk<GenericRecord>(relaxed = true)
+        every { genericProcessor.process(genericRecord, ArchiveType.INFORMATION_MODEL.topicName) } returns
+            ProcessOutcome.Saved(ArchiveType.INFORMATION_MODEL)
+        val record =
+            org.apache.kafka.clients.consumer.ConsumerRecord<String, Any>(
+                ArchiveType.TOPIC_INFORMATION_MODEL,
+                0,
+                0L,
+                "key",
+                genericRecord,
+            )
+
+        val outcome = circuitBreaker.process(record)
+
+        assertThat(outcome).isEqualTo(ProcessOutcome.Saved(ArchiveType.INFORMATION_MODEL))
+        verify(exactly = 1) { genericProcessor.process(genericRecord, ArchiveType.INFORMATION_MODEL.topicName) }
+        verify(exactly = 0) { eventArchiveService.saveInformationModel(any()) }
     }
 }

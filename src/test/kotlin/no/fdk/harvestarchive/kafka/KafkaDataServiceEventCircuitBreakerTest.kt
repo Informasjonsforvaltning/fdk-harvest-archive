@@ -6,7 +6,10 @@ import io.mockk.mockk
 import io.mockk.verify
 import no.fdk.dataservice.DataServiceEvent
 import no.fdk.dataservice.DataServiceEventType
+import no.fdk.harvestarchive.archive.ArchiveType
 import no.fdk.harvestarchive.archive.EventArchiveService
+import org.apache.avro.generic.GenericRecord
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
@@ -23,7 +26,7 @@ class KafkaDataServiceEventCircuitBreakerTest {
             .ConsumerRecord("data-service-events", 0, 0L, "key", event as Any)
 
     @Test
-    fun `process calls eventArchiveService saveDataService with event`() {
+    fun `process calls eventArchiveService saveDataService with event and returns Saved`() {
         val event =
             DataServiceEvent
                 .newBuilder()
@@ -36,13 +39,14 @@ class KafkaDataServiceEventCircuitBreakerTest {
                 .build()
         every { eventArchiveService.saveDataService(any()) } returns Unit
 
-        circuitBreaker.process(recordFor(event))
+        val outcome = circuitBreaker.process(recordFor(event))
 
+        assertThat(outcome).isEqualTo(ProcessOutcome.Saved(ArchiveType.DATA_SERVICE))
         verify(exactly = 1) { eventArchiveService.saveDataService(event) }
     }
 
     @Test
-    fun `reasoned events are skipped`() {
+    fun `reasoned events are skipped and return Skipped`() {
         val event =
             DataServiceEvent
                 .newBuilder()
@@ -54,8 +58,9 @@ class KafkaDataServiceEventCircuitBreakerTest {
                 .setTimestamp(123)
                 .build()
 
-        circuitBreaker.process(recordFor(event))
+        val outcome = circuitBreaker.process(recordFor(event))
 
+        assertThat(outcome).isEqualTo(ProcessOutcome.Skipped(ArchiveType.DATA_SERVICE, "unsupported_event_type"))
         verify(exactly = 0) { eventArchiveService.saveDataService(any()) }
     }
 
@@ -79,7 +84,7 @@ class KafkaDataServiceEventCircuitBreakerTest {
     }
 
     @Test
-    fun `unsupported value type is skipped and genericProcessor not called`() {
+    fun `unsupported value type returns Skipped`() {
         val record =
             org.apache.kafka.clients.consumer.ConsumerRecord<String, Any>(
                 "data-service-events",
@@ -89,9 +94,31 @@ class KafkaDataServiceEventCircuitBreakerTest {
                 listOf("unexpected"),
             )
 
-        circuitBreaker.process(record)
+        val outcome = circuitBreaker.process(record)
 
+        assertThat(outcome).isEqualTo(ProcessOutcome.Skipped(ArchiveType.DATA_SERVICE, "unsupported_payload"))
         verify(exactly = 0) { eventArchiveService.saveDataService(any()) }
         verify(exactly = 0) { genericProcessor.process(any(), any()) }
+    }
+
+    @Test
+    fun `generic harvested record returns Saved from generic processor`() {
+        val genericRecord = mockk<GenericRecord>(relaxed = true)
+        every { genericProcessor.process(genericRecord, ArchiveType.DATA_SERVICE.topicName) } returns
+            ProcessOutcome.Saved(ArchiveType.DATA_SERVICE)
+        val record =
+            org.apache.kafka.clients.consumer.ConsumerRecord<String, Any>(
+                ArchiveType.TOPIC_DATA_SERVICE,
+                0,
+                0L,
+                "key",
+                genericRecord,
+            )
+
+        val outcome = circuitBreaker.process(record)
+
+        assertThat(outcome).isEqualTo(ProcessOutcome.Saved(ArchiveType.DATA_SERVICE))
+        verify(exactly = 1) { genericProcessor.process(genericRecord, ArchiveType.DATA_SERVICE.topicName) }
+        verify(exactly = 0) { eventArchiveService.saveDataService(any()) }
     }
 }

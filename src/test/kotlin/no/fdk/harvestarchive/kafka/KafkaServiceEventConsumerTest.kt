@@ -1,8 +1,14 @@
 package no.fdk.harvestarchive.kafka
 
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException
+import io.github.resilience4j.circuitbreaker.CircuitBreaker
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import no.fdk.harvestarchive.archive.ArchiveType
+import no.fdk.harvestarchive.metrics.ArchiveMetrics
+import no.fdk.harvestarchive.metrics.assertEventProcessed
 import no.fdk.service.ServiceEvent
 import no.fdk.service.ServiceEventType
 import org.apache.avro.generic.GenericRecord
@@ -16,7 +22,8 @@ import java.time.Duration
 @Tag("unit")
 class KafkaServiceEventConsumerTest {
     private val circuitBreaker: KafkaServiceEventCircuitBreaker = mockk()
-    private val consumer = KafkaServiceEventConsumer(circuitBreaker)
+    private val registry = SimpleMeterRegistry()
+    private val consumer = KafkaServiceEventConsumer(circuitBreaker, ArchiveMetrics(registry))
     private val ack: Acknowledgment = mockk(relaxed = true)
 
     @Test
@@ -31,13 +38,14 @@ class KafkaServiceEventConsumerTest {
         val genericRecord = mockk<GenericRecord>(relaxed = true)
         val record: ConsumerRecord<String, Any> = ConsumerRecord("service-events", 0, 0L, "key", genericRecord)
 
-        every { circuitBreaker.process(any()) } returns Unit
+        every { circuitBreaker.process(any()) } returns ProcessOutcome.Saved(no.fdk.harvestarchive.archive.ArchiveType.SERVICE)
 
         consumer.consumeServiceEvent(record, ack)
 
         verify(exactly = 1) { circuitBreaker.process(record) }
         verify(exactly = 1) { ack.acknowledge() }
         verify(exactly = 0) { ack.nack(any<Duration>()) }
+        registry.assertEventProcessed(ArchiveType.SERVICE, "acked")
     }
 
     @Test
@@ -54,7 +62,7 @@ class KafkaServiceEventConsumerTest {
                 .build()
         val record: ConsumerRecord<String, Any> = ConsumerRecord("service-events", 0, 0L, "key", event as Any)
 
-        every { circuitBreaker.process(any()) } returns Unit
+        every { circuitBreaker.process(any()) } returns ProcessOutcome.Saved(no.fdk.harvestarchive.archive.ArchiveType.SERVICE)
 
         consumer.consumeServiceEvent(record, ack)
 
@@ -77,13 +85,38 @@ class KafkaServiceEventConsumerTest {
                 .build()
         val record: ConsumerRecord<String, Any> = ConsumerRecord("service-events", 0, 0L, "key", event as Any)
 
-        every { circuitBreaker.process(any()) } returns Unit
+        every { circuitBreaker.process(any()) } returns ProcessOutcome.Saved(no.fdk.harvestarchive.archive.ArchiveType.SERVICE)
 
         consumer.consumeServiceEvent(record, ack)
 
         verify(exactly = 1) { circuitBreaker.process(record) }
         verify(exactly = 1) { ack.acknowledge() }
         verify(exactly = 0) { ack.nack(any<Duration>()) }
+    }
+
+    @Test
+    fun `consumeServiceEvent acknowledges skipped events`() {
+        val record: ConsumerRecord<String, Any> = ConsumerRecord("service-events", 0, 0L, "key", "skip")
+        every { circuitBreaker.process(any()) } returns ProcessOutcome.Skipped(ArchiveType.SERVICE, "unsupported_payload")
+
+        consumer.consumeServiceEvent(record, ack)
+
+        verify(exactly = 1) { ack.acknowledge() }
+        verify(exactly = 0) { ack.nack(any<Duration>()) }
+        registry.assertEventProcessed(ArchiveType.SERVICE, "skipped", "unsupported_payload")
+    }
+
+    @Test
+    fun `consumeServiceEvent nacks on circuit breaker open`() {
+        val record: ConsumerRecord<String, Any> = ConsumerRecord("service-events", 0, 0L, "key", "any")
+        val cb = CircuitBreaker.ofDefaults("dummy")
+        every { circuitBreaker.process(any()) } throws CallNotPermittedException.createCallNotPermittedException(cb)
+
+        consumer.consumeServiceEvent(record, ack)
+
+        verify(exactly = 1) { ack.nack(Duration.ZERO) }
+        verify(exactly = 0) { ack.acknowledge() }
+        registry.assertEventProcessed(ArchiveType.SERVICE, "nacked", "circuit_open")
     }
 
     @Test
@@ -107,5 +140,6 @@ class KafkaServiceEventConsumerTest {
         verify(exactly = 1) { circuitBreaker.process(record) }
         verify(exactly = 1) { ack.nack(Duration.ZERO) }
         verify(exactly = 0) { ack.acknowledge() }
+        registry.assertEventProcessed(ArchiveType.SERVICE, "nacked", "processing_error")
     }
 }

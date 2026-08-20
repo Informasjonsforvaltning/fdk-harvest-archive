@@ -3,8 +3,11 @@ package no.fdk.harvestarchive.kafka
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import no.fdk.harvestarchive.archive.ArchiveType
+import no.fdk.harvestarchive.archive.ArchiveWrite
 import no.fdk.harvestarchive.archive.EventArchiveService
 import org.apache.avro.generic.GenericRecord
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Tag
@@ -25,9 +28,11 @@ class KafkaGenericProcessorTest {
         every { genericRecord.get("graph") } returns "<> a <http://example.org/Dataset> ."
         every { genericRecord.get("timestamp") } returns 1700000000000L
 
-        every { eventArchiveService.saveGenericForTopic(any(), any()) } returns Unit
+        every { eventArchiveService.saveGenericForTopic(any(), any()) } returns ArchiveWrite.Saved(ArchiveType.DATASET)
 
-        processor.process(genericRecord, "dataset-events")
+        val outcome = processor.process(genericRecord, "dataset-events")
+
+        assertThat(outcome).isEqualTo(ProcessOutcome.Saved(ArchiveType.DATASET))
 
         verify(exactly = 1) {
             eventArchiveService.saveGenericForTopic(
@@ -54,9 +59,11 @@ class KafkaGenericProcessorTest {
         every { genericRecord.get("graph") } returns ""
         every { genericRecord.get("timestamp") } returns 123L
 
-        every { eventArchiveService.saveGenericForTopic(any(), any()) } returns Unit
+        every { eventArchiveService.saveGenericForTopic(any(), any()) } returns ArchiveWrite.Saved(ArchiveType.CONCEPT)
 
-        processor.process(genericRecord, "concept-events")
+        val outcome = processor.process(genericRecord, "concept-events")
+
+        assertThat(outcome).isEqualTo(ProcessOutcome.Saved(ArchiveType.CONCEPT))
 
         verify(exactly = 1) {
             eventArchiveService.saveGenericForTopic(
@@ -87,5 +94,17 @@ class KafkaGenericProcessorTest {
         assertEquals("write failed", thrown.message)
 
         verify(exactly = 1) { eventArchiveService.saveGenericForTopic("dataset-events", any()) }
+    }
+
+    @Test
+    fun `process returns Skipped when saveGenericForTopic skips the payload`() {
+        val genericRecord = mockk<GenericRecord>(relaxed = true)
+        every { genericRecord.get("type") } returns "DATASET_REASONED"
+        every { eventArchiveService.saveGenericForTopic(any(), any()) } returns
+            ArchiveWrite.Skipped(ArchiveType.DATASET, "unsupported_event_type")
+
+        val outcome = processor.process(genericRecord, "dataset-events")
+
+        assertThat(outcome).isEqualTo(ProcessOutcome.Skipped(ArchiveType.DATASET, "unsupported_event_type"))
     }
 }

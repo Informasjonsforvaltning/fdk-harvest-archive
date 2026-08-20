@@ -3,9 +3,13 @@ package no.fdk.harvestarchive.config
 import io.github.resilience4j.circuitbreaker.CircuitBreaker
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.mockk.mockk
 import io.mockk.verify
+import no.fdk.harvestarchive.archive.ArchiveType
 import no.fdk.harvestarchive.kafka.KafkaManager
+import no.fdk.harvestarchive.metrics.ArchiveMetrics
+import no.fdk.harvestarchive.metrics.listenerPaused
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
@@ -27,9 +31,11 @@ class CircuitBreakerConsumerConfigurationTest {
                 .waitDurationInOpenState(Duration.ofMillis(10))
                 .build()
 
+        val meterRegistry = SimpleMeterRegistry()
+        val metrics = ArchiveMetrics(meterRegistry)
         val registry = CircuitBreakerRegistry.of(cbConfig)
-        HarvestCircuitBreakerConfig(kafkaManager).registerListeners(registry)
-        val cb = registry.circuitBreaker(HarvestCircuitBreakerConfig.DATASET_CIRCUIT_BREAKER_ID)
+        HarvestCircuitBreakerConfig(kafkaManager, metrics).registerListeners(registry)
+        val cb = registry.circuitBreaker(ArchiveType.DATASET.circuitBreakerId)
 
         repeat(2) {
             try {
@@ -40,30 +46,37 @@ class CircuitBreakerConsumerConfigurationTest {
         }
 
         assertEquals(CircuitBreaker.State.OPEN, cb.state)
-        verify(exactly = 1) { kafkaManager.pause("dataset-archive") }
+        verify(exactly = 1) { kafkaManager.pause(ArchiveType.DATASET.listenerId) }
+        assertEquals(1.0, meterRegistry.listenerPaused(ArchiveType.DATASET.listenerId))
+        assertEquals(0.0, meterRegistry.listenerPaused(ArchiveType.CONCEPT.listenerId))
     }
 
     @Test
     fun `circuit breaker half-open and closed resumes kafka listener`() {
         val kafkaManager = mockk<KafkaManager>(relaxed = true)
 
+        val meterRegistry = SimpleMeterRegistry()
+        val metrics = ArchiveMetrics(meterRegistry)
         val registry = CircuitBreakerRegistry.ofDefaults()
-        HarvestCircuitBreakerConfig(kafkaManager).registerListeners(registry)
-        val cb = registry.circuitBreaker(HarvestCircuitBreakerConfig.DATASET_CIRCUIT_BREAKER_ID)
+        HarvestCircuitBreakerConfig(kafkaManager, metrics).registerListeners(registry)
+        val cb = registry.circuitBreaker(ArchiveType.DATASET.circuitBreakerId)
 
         cb.transitionToOpenState()
+        assertEquals(1.0, meterRegistry.listenerPaused(ArchiveType.DATASET.listenerId))
+
         cb.transitionToHalfOpenState()
         cb.transitionToClosedState()
 
         // OPEN->HALF_OPEN triggers resume, HALF_OPEN->CLOSED triggers resume
-        verify(atLeast = 1) { kafkaManager.resume("dataset-archive") }
+        verify(atLeast = 1) { kafkaManager.resume(ArchiveType.DATASET.listenerId) }
+        assertEquals(0.0, meterRegistry.listenerPaused(ArchiveType.DATASET.listenerId))
     }
 
     @Test
     fun `bean methods create circuit breakers from registry`() {
         val kafkaManager = mockk<KafkaManager>(relaxed = true)
 
-        val config = HarvestCircuitBreakerConfig(kafkaManager)
+        val config = HarvestCircuitBreakerConfig(kafkaManager, ArchiveMetrics(SimpleMeterRegistry()))
         val registry = config.circuitBreakerRegistry()
 
         val datasetCb = config.datasetArchiveCircuitBreaker(registry)
@@ -73,6 +86,12 @@ class CircuitBreakerConsumerConfigurationTest {
         val eventCb = config.eventArchiveCircuitBreaker(registry)
         val serviceCb = config.serviceArchiveCircuitBreaker(registry)
 
+        assertEquals(ArchiveType.DATASET.circuitBreakerId, datasetCb.name)
+        assertEquals(ArchiveType.CONCEPT.circuitBreakerId, conceptCb.name)
+        assertEquals(ArchiveType.DATA_SERVICE.circuitBreakerId, dataServiceCb.name)
+        assertEquals(ArchiveType.INFORMATION_MODEL.circuitBreakerId, informationModelCb.name)
+        assertEquals(ArchiveType.EVENT.circuitBreakerId, eventCb.name)
+        assertEquals(ArchiveType.SERVICE.circuitBreakerId, serviceCb.name)
         assertEquals(CircuitBreaker.State.CLOSED, datasetCb.state)
         assertEquals(CircuitBreaker.State.CLOSED, conceptCb.state)
         assertEquals(CircuitBreaker.State.CLOSED, dataServiceCb.state)

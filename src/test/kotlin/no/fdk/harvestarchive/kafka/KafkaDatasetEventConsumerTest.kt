@@ -1,10 +1,16 @@
 package no.fdk.harvestarchive.kafka
 
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException
+import io.github.resilience4j.circuitbreaker.CircuitBreaker
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import no.fdk.dataset.DatasetEvent
 import no.fdk.dataset.DatasetEventType
+import no.fdk.harvestarchive.archive.ArchiveType
+import no.fdk.harvestarchive.metrics.ArchiveMetrics
+import no.fdk.harvestarchive.metrics.assertEventProcessed
 import org.apache.avro.generic.GenericRecord
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.assertj.core.api.Assertions.assertThat
@@ -16,7 +22,8 @@ import java.time.Duration
 @Tag("unit")
 class KafkaDatasetEventConsumerTest {
     private val circuitBreaker: KafkaDatasetEventCircuitBreaker = mockk()
-    private val consumer = KafkaDatasetEventConsumer(circuitBreaker)
+    private val registry = SimpleMeterRegistry()
+    private val consumer = KafkaDatasetEventConsumer(circuitBreaker, ArchiveMetrics(registry))
     private val ack: Acknowledgment = mockk(relaxed = true)
 
     @Test
@@ -31,13 +38,14 @@ class KafkaDatasetEventConsumerTest {
         val genericRecord = mockk<GenericRecord>(relaxed = true)
         val record: ConsumerRecord<String, Any> = ConsumerRecord("dataset-events", 0, 0L, "key", genericRecord)
 
-        every { circuitBreaker.process(any()) } returns Unit
+        every { circuitBreaker.process(any()) } returns ProcessOutcome.Saved(no.fdk.harvestarchive.archive.ArchiveType.DATASET)
 
         consumer.consumeDatasetEvent(record, ack)
 
         verify(exactly = 1) { circuitBreaker.process(record) }
         verify(exactly = 1) { ack.acknowledge() }
         verify(exactly = 0) { ack.nack(any<Duration>()) }
+        registry.assertEventProcessed(ArchiveType.DATASET, "acked")
     }
 
     @Test
@@ -54,7 +62,7 @@ class KafkaDatasetEventConsumerTest {
                 .build()
         val record: ConsumerRecord<String, Any> = ConsumerRecord("dataset-events", 0, 0L, "key", event as Any)
 
-        every { circuitBreaker.process(any()) } returns Unit
+        every { circuitBreaker.process(any()) } returns ProcessOutcome.Saved(no.fdk.harvestarchive.archive.ArchiveType.DATASET)
 
         consumer.consumeDatasetEvent(record, ack)
 
@@ -77,13 +85,41 @@ class KafkaDatasetEventConsumerTest {
                 .build()
         val record: ConsumerRecord<String, Any> = ConsumerRecord("dataset-events", 0, 0L, "key", event as Any)
 
-        every { circuitBreaker.process(any()) } returns Unit
+        every { circuitBreaker.process(any()) } returns ProcessOutcome.Saved(no.fdk.harvestarchive.archive.ArchiveType.DATASET)
 
         consumer.consumeDatasetEvent(record, ack)
 
         verify(exactly = 1) { circuitBreaker.process(record) }
         verify(exactly = 1) { ack.acknowledge() }
         verify(exactly = 0) { ack.nack(any<Duration>()) }
+    }
+
+    @Test
+    fun `consumeDatasetEvent acknowledges skipped events`() {
+        val record: ConsumerRecord<String, Any> = ConsumerRecord("dataset-events", 0, 0L, "key", "not-a-dataset")
+
+        every { circuitBreaker.process(any()) } returns ProcessOutcome.Skipped(ArchiveType.DATASET, "unsupported_payload")
+
+        consumer.consumeDatasetEvent(record, ack)
+
+        verify(exactly = 1) { ack.acknowledge() }
+        verify(exactly = 0) { ack.nack(any<Duration>()) }
+        registry.assertEventProcessed(ArchiveType.DATASET, "skipped", "unsupported_payload")
+        assertThat(registry.find("harvest_archive_skipped_total").counter()).isNull()
+    }
+
+    @Test
+    fun `consumeDatasetEvent nacks on circuit breaker open`() {
+        val record: ConsumerRecord<String, Any> = ConsumerRecord("dataset-events", 0, 0L, "key", "any")
+        val cb = CircuitBreaker.ofDefaults("dummy")
+
+        every { circuitBreaker.process(any()) } throws CallNotPermittedException.createCallNotPermittedException(cb)
+
+        consumer.consumeDatasetEvent(record, ack)
+
+        verify(exactly = 1) { ack.nack(Duration.ZERO) }
+        verify(exactly = 0) { ack.acknowledge() }
+        registry.assertEventProcessed(ArchiveType.DATASET, "nacked", "circuit_open")
     }
 
     @Test
@@ -107,5 +143,6 @@ class KafkaDatasetEventConsumerTest {
         verify(exactly = 1) { circuitBreaker.process(record) }
         verify(exactly = 1) { ack.nack(Duration.ZERO) }
         verify(exactly = 0) { ack.acknowledge() }
+        registry.assertEventProcessed(ArchiveType.DATASET, "nacked", "processing_error")
     }
 }
