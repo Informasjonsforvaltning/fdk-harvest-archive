@@ -21,6 +21,7 @@ import kotlin.time.measureTimedValue
 class ArchiveZipper(
     private val archiveDirectories: ArchiveDirectories,
     @param:Value("\${app.archive.zip-threshold-bytes}") private val zipThresholdBytes: Long,
+    @param:Value("\${app.archive.zip-threshold-file-count}") private val zipThresholdFileCount: Int,
     @param:Value("\${app.archive.zip-max-file-count}") private val zipMaxFileCount: Int,
     private val archiveMetrics: ArchiveMetrics,
 ) {
@@ -42,6 +43,7 @@ class ArchiveZipper(
         archiveType: ArchiveType,
         dirPath: Path,
         thresholdBytes: Long = zipThresholdBytes,
+        thresholdFileCount: Int = zipThresholdFileCount,
         maxFileCount: Int = zipMaxFileCount,
     ) {
         val files = listRegularFiles(dirPath)
@@ -51,7 +53,7 @@ class ArchiveZipper(
 
         archiveMetrics.updateDirectorySnapshot(archiveType, totalSize, fileCount)
 
-        if (totalSize < thresholdBytes) return
+        if (totalSize < thresholdBytes && fileCount < thresholdFileCount) return
 
         val parent = dirPath.parent ?: return
         val filesToArchive = files.take(maxFileCount)

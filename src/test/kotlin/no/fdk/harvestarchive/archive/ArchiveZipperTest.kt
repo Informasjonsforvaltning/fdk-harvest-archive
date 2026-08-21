@@ -24,9 +24,15 @@ class ArchiveZipperTest {
         archiveMetrics = ArchiveMetrics(registry)
     }
 
-    private fun zipperFor(tempDir: Path, zipThresholdBytes: Long = 10L * 1024 * 1024 * 1024, zipMaxFileCount: Int = 2000) = ArchiveZipper(
+    private fun zipperFor(
+        tempDir: Path,
+        zipThresholdBytes: Long = 10L * 1024 * 1024 * 1024,
+        zipThresholdFileCount: Int = 1500,
+        zipMaxFileCount: Int = 2000,
+    ) = ArchiveZipper(
         archiveDirectories = archiveDirectories(tempDir),
         zipThresholdBytes = zipThresholdBytes,
+        zipThresholdFileCount = zipThresholdFileCount,
         zipMaxFileCount = zipMaxFileCount,
         archiveMetrics = archiveMetrics,
     )

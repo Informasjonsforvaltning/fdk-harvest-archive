@@ -8,12 +8,12 @@ import org.springframework.stereotype.Component
  */
 @Component
 class ArchiveDirectories(
-    @param:Value($$"${app.archive.dataset-dir}") datasetDir: String,
-    @param:Value($$"${app.archive.concept-dir}") conceptDir: String,
-    @param:Value($$"${app.archive.data-service-dir}") dataServiceDir: String,
-    @param:Value($$"${app.archive.information-model-dir}") informationModelDir: String,
-    @param:Value($$"${app.archive.event-dir}") eventDir: String,
-    @param:Value($$"${app.archive.service-dir}") serviceDir: String,
+    @Value($$"${app.archive.dataset-dir}") datasetDir: String,
+    @Value($$"${app.archive.concept-dir}") conceptDir: String,
+    @Value($$"${app.archive.data-service-dir}") dataServiceDir: String,
+    @Value($$"${app.archive.information-model-dir}") informationModelDir: String,
+    @Value($$"${app.archive.event-dir}") eventDir: String,
+    @Value($$"${app.archive.service-dir}") serviceDir: String,
 ) {
     private val dirs: Map<ArchiveType, String> =
         mapOf(
