@@ -32,6 +32,7 @@ app:
     service-dir: ${APP_ARCHIVE_SERVICE_DIR}
     zip-check-interval-ms: ${APP_ARCHIVE_ZIP_CHECK_INTERVAL_MS}
     zip-threshold-bytes: 10737418240
+    zip-threshold-file-count: 15000
     zip-max-file-count: 20000
 
 resilience4j:
