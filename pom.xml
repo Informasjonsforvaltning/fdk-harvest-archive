@@ -34,6 +34,8 @@
         <avro.version>1.12.1</avro.version>
         <confluent.version>8.3.1</confluent.version>
         <ktlint.version>3.7.1</ktlint.version>
+        <!-- Overrides Spring Boot 4.1.0 (5.4.2), which is still affected by CVE-2026-54399 and CVE-2026-54428 -->
+        <httpcore5.version>5.4.3</httpcore5.version>
     </properties>
 
     <repositories>
