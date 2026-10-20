@@ -3,11 +3,14 @@ package no.fdk.harvestarchive.kafka
 import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig
 import io.confluent.kafka.serializers.KafkaAvroDeserializerConfig
 import io.confluent.kafka.serializers.subject.RecordNameStrategy
+import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.consumer.ConsumerConfig
+import org.apache.kafka.common.config.SaslConfigs
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.springframework.kafka.listener.ContainerProperties
+import java.time.Duration
 
 @Tag("unit")
 class KafkaConfigTest {
@@ -18,6 +21,23 @@ class KafkaConfigTest {
 
         assertThat(factory.containerProperties.ackMode)
             .isEqualTo(ContainerProperties.AckMode.MANUAL)
+    }
+
+    @Test
+    fun `listener container factory retries on auth failure instead of stopping`() {
+        val factory = kafkaConfig().kafkaListenerContainerFactory()
+
+        assertThat(factory.containerProperties.authExceptionRetryInterval)
+            .isEqualTo(Duration.ofSeconds(30))
+    }
+
+    @Test
+    fun `consumer factory carries the SASL client settings`() {
+        val props = kafkaConfig().consumerFactory().configurationProperties
+
+        assertThat(props[CommonClientConfigs.SECURITY_PROTOCOL_CONFIG]).isEqualTo("SASL_PLAINTEXT")
+        assertThat(props[SaslConfigs.SASL_MECHANISM]).isEqualTo("SCRAM-SHA-512")
+        assertThat(props[SaslConfigs.SASL_JAAS_CONFIG]).isEqualTo("jaas-config")
     }
 
     @Test
@@ -37,6 +57,9 @@ class KafkaConfigTest {
 
     private fun kafkaConfig() = KafkaConfig(
         bootstrapServers = "localhost:9092",
+        securityProtocol = "SASL_PLAINTEXT",
+        saslMechanism = "SCRAM-SHA-512",
+        saslJaasConfig = "jaas-config",
         schemaRegistryUrl = "http://localhost:8081",
         groupId = "fdk-harvest-archive",
     )
