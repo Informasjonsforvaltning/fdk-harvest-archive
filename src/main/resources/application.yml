@@ -14,6 +14,10 @@ spring:
     proxy-target-class: false
   kafka:
     bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS}
+    properties:
+      security.protocol: ${KAFKA_SECURITY_PROTOCOL:PLAINTEXT}
+      sasl.mechanism: ${KAFKA_SASL_MECHANISM:SCRAM-SHA-512}
+      sasl.jaas.config: ${KAFKA_SASL_JAAS_CONFIG:}
     consumer:
       group-id: ${SPRING_KAFKA_CONSUMER_GROUP_ID:fdk-harvest-archive}
       properties:

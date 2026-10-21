@@ -20,6 +20,9 @@ Spring Boot application that consumes harvest event messages from Kafka and arch
 |-----------------------|---------|-------------|
 | `SPRING_KAFKA_BOOTSTRAP_SERVERS` | `localhost:9092` | Kafka bootstrap servers |
 | `SPRING_KAFKA_CONSUMER_PROPERTIES_SCHEMA_REGISTRY_URL` | `http://localhost:8081` | Schema Registry URL |
+| `KAFKA_SECURITY_PROTOCOL` | `PLAINTEXT` | Kafka security protocol, e.g. `SASL_PLAINTEXT` |
+| `KAFKA_SASL_MECHANISM` | `SCRAM-SHA-512` | SASL mechanism, used when the protocol is SASL |
+| `KAFKA_SASL_JAAS_CONFIG` | _(empty)_ | JAAS login line for the SASL client user |
 | `SPRING_KAFKA_LISTENER_AUTO_STARTUP` | `false` | Start listeners on boot (set `true` if Kafka is up at startup) |
 | `APP_ARCHIVE_DATASET_DIR` | `archive/datasets` | Directory for dataset event JSON files |
 | `APP_ARCHIVE_CONCEPT_DIR` | `archive/concepts` | Directory for concept event JSON files |
