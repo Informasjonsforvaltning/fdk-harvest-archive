@@ -22,9 +22,6 @@ spring:
       group-id: ${SPRING_KAFKA_CONSUMER_GROUP_ID:fdk-harvest-archive}
       properties:
         schema.registry.url: ${SPRING_KAFKA_CONSUMER_PROPERTIES_SCHEMA_REGISTRY_URL}
-    listener:
-      # false = app starts even when Kafka is down (listener can be started later when Kafka is available)
-      auto-startup: ${SPRING_KAFKA_LISTENER_AUTO_STARTUP:false}
 
 app:
   archive:

@@ -23,7 +23,6 @@ Spring Boot application that consumes harvest event messages from Kafka and arch
 | `KAFKA_SECURITY_PROTOCOL` | `PLAINTEXT` | Kafka security protocol, e.g. `SASL_PLAINTEXT` |
 | `KAFKA_SASL_MECHANISM` | `SCRAM-SHA-512` | SASL mechanism, used when the protocol is SASL |
 | `KAFKA_SASL_JAAS_CONFIG` | _(empty)_ | JAAS login line for the SASL client user |
-| `SPRING_KAFKA_LISTENER_AUTO_STARTUP` | `false` | Start listeners on boot (set `true` if Kafka is up at startup) |
 | `APP_ARCHIVE_DATASET_DIR` | `archive/datasets` | Directory for dataset event JSON files |
 | `APP_ARCHIVE_CONCEPT_DIR` | `archive/concepts` | Directory for concept event JSON files |
 | `APP_ARCHIVE_DATASERVICE_DIR` | `archive/data_services` | Directory for data service event JSON files |
@@ -41,7 +40,7 @@ Topic names can be overridden via `APP_KAFKA_TOPIC_*` (see `application.yml`).
    docker compose up -d kafka schema-registry kafka-init
    ```
 
-2. **Run the application** (optional: set `SPRING_KAFKA_LISTENER_AUTO_STARTUP=true` if Kafka is already up):
+2. **Run the application**:
 
    ```bash
    mvn spring-boot:run -Dspring-boot.run.profiles=develop
