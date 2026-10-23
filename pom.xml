@@ -32,7 +32,7 @@
         <kotlin.version>2.4.20</kotlin.version>
         <testcontainers.version>2.0.5</testcontainers.version>
         <avro.version>1.12.1</avro.version>
-        <confluent.version>8.3.1</confluent.version>
+        <confluent.version>8.3.2</confluent.version>
         <ktlint.version>3.7.1</ktlint.version>
 
         <!-- Overrides Spring Boot 4.1.1 (11.0.24): CVE-2026-65182, CVE-2026-65905, CVE-2026-68525 -->
