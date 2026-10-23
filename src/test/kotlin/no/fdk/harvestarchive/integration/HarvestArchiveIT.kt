@@ -55,7 +55,6 @@ class HarvestArchiveIT {
         fun kafkaProperties(registry: DynamicPropertyRegistry) {
             registry.add("spring.kafka.bootstrap-servers", kafka::getBootstrapServers)
             registry.add("spring.kafka.consumer.properties.schema.registry.url") { MOCK_SCHEMA_REGISTRY_URL }
-            registry.add("spring.kafka.listener.auto-startup") { "true" }
             registry.add("app.archive.dataset-dir") { archiveRoot.resolve("datasets").toString() }
             registry.add("app.archive.concept-dir") { archiveRoot.resolve("concepts").toString() }
             registry.add("app.archive.data-service-dir") { archiveRoot.resolve("data_services").toString() }
